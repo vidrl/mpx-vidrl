@@ -39,7 +39,7 @@ workflow {
     // Staging files and channels
 
     mpx_ref = check_file(params.reference)
-    reads = channel.fromFilePairs(params.illumina_pe, flat: true)
+    reads = channel.fromFilePairs(params.fastq, flat: true)
 
     // Mapping reads to MPX reference and extracting mapped reads
 
