@@ -14,8 +14,10 @@ process SpadesIsolate {
 
     script:
 
+    mem = task.memory.replaceAll("[^0-9]", "")
+
     """
-    spades.py --isolate -1 $forward -2 $reverse -t $task.cpus -m $task.memory -o working
+    spades.py --isolate -1 $forward -2 $reverse -t $task.cpus -m $mem -o working
     cp working/contigs.fasta ${id}.contigs.fasta
     cp working/scaffolds.fasta ${id}.scaffolds.fasta
     """
