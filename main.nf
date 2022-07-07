@@ -45,7 +45,7 @@ workflow reference_assembly {
         reference
     main:
         qc_reads = Fastp(reads)
-        aligned_reads = MinimapReferenceAlignment(qc_reads, reference)
+        aligned_reads = MinimapReferenceAlignment(qc_reads[0], reference)
         extracted_reads = ExtractAligned(aligned_reads[0], aligned_reads[1])
         assembly = ReferenceAssembly(extracted_reads[0])
     emit:
@@ -75,7 +75,7 @@ workflow denovo_assembly {
         host_index
     main:
         qc_reads = Fastp(reads)
-        host_aligned_reads = MinimapHostAlignment(qc_reads, host_index)
+        host_aligned_reads = MinimapHostAlignment(qc_reads[0], host_index)
         depleted_reads = DepleteAligned(aligned_reads[0], aligned_reads[1])
         assembly = DenovoAssembly(depleted_reads[0]) 
     emit:
