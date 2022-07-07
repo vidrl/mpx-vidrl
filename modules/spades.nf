@@ -10,7 +10,7 @@ process SpadesIsolate {
 
     output:
     tuple val(id), file(forward), file(reverse)
-    tuple val(id), val("${id}.contigs.fasta"), val("${id}.scaffolds.fasta") optional true
+    tuple val(id), val("${id}.contigs.fasta"), val("${id}.scaffolds.fasta")
 
     script:
 
@@ -21,6 +21,11 @@ process SpadesIsolate {
         spades.py --isolate -1 $forward -2 $reverse -t $task.cpus -m $mem -o working
         cp working/contigs.fasta ${id}.contigs.fasta
         cp working/scaffolds.fasta ${id}.scaffolds.fasta
+        """
+    else
+        """
+        touch ${id}.contigs.fasta
+        touch ${id}.scaffolds.fasta
         """
 }
 

@@ -11,7 +11,7 @@ process ExtractAligned {
     tuple val(id_idx), val(idx_name), file(alignment)  // can be .txt extension for read identifiers (recognized automatically)
 
     output:
-    tuple val(id), file("${id}_${idx_name}_aligned_1.fastq"), file("${id}_${idx_name}_aligned_2.fastq") optional true
+    tuple val(id), file("${id}_${idx_name}_aligned_1.fastq"), file("${id}_${idx_name}_aligned_2.fastq")
     file("${id}_${idx_name}.json") optional true 
 
     script:
@@ -29,6 +29,11 @@ process ExtractAligned {
             --report ${id}_${idx_name}.json \
             --output-removed
         """
+    else
+        """
+        touch ${id}_${idx_name}_aligned_1.fastq 
+        touch ${id}_${idx_name}_aligned_2.fastq
+        """
 
 }
 
@@ -45,7 +50,7 @@ process DepleteAligned {
     tuple val(id_idx), val(idx_name), file(alignment)  // can be .txt extension for read identifiers (recognized automatically)
 
     output:
-    tuple val(id), file("${id}_${idx_name}_depleted_1.fastq"), file("${id}_${idx_name}_depleted_2.fastq") optional true
+    tuple val(id), file("${id}_${idx_name}_depleted_1.fastq"), file("${id}_${idx_name}_depleted_2.fastq")
     file("${id}_${idx_name}.json") optional true 
 
     script:
@@ -61,6 +66,11 @@ process DepleteAligned {
             --min-len $params.host_deplete_min_qaln_len \
             --min-mapq $params.host_deplete_min_mapq \
             --report ${id}_${idx_name}.json
+        """
+    else
+        """
+        touch ${id}_${idx_name}_depleted_1.fastq 
+        touch ${id}_${idx_name}_depleted_2.fastq
         """
 
 }
