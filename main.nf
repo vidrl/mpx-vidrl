@@ -13,12 +13,6 @@ Monkeypox assembly workflow
 
 nextflow.enable.dsl=2
 
-params.outdir = "mpx_assembly"
-params.fastq = "fastq/*_{R1_001,R2_001}.fastq.gz"
-params.reference = "mpx_slo_2022.fasta"
-
-params.extract_min_qaln_len = 50
-params.extract_min_mapq = 0
 
 // Basic workflow using alignment against Monkeypox reference
 // and subsequent assembly of mapped reads
@@ -31,7 +25,7 @@ include { MinimapAlignCigarPAF as MinimapReferenceAlignment } from './core/minim
 )
 include { ExtractAligned } from './core/mgp_tools' addParams(
     stage: "reference_alignment",
-    subdir: "extractions"
+    subdir: "extractions",
     extract_min_len: params.extract_min_qaln_len,
     extract_min_mapq: params.extract_min_mapq
 )
