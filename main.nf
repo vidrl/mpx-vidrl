@@ -17,7 +17,7 @@ nextflow.enable.dsl=2
 // Basic workflow using alignment against Monkeypox reference
 // and subsequent assembly of mapped reads
 
-include { check_file } from './utils'
+include { check_file } from './modules/utils'
 
 include { MinimapAlignCigarPAF as MinimapReferenceAlignment } from './modules/minimap2' addParams(
     stage: "reference_alignment",
