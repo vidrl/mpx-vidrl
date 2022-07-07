@@ -10,17 +10,17 @@ process SpadesIsolate {
 
     output:
     tuple val(id), file(forward), file(reverse)
-    tuple val(id), val("${id}.contigs.fasta"), val("${id}.scaffolds.fasta")
+    tuple val(id), val("${id}.contigs.fasta"), val("${id}.scaffolds.fasta") optional true
 
     script:
 
     mem = task.memory.toString().replaceAll("[^0-9]", "")
 
-    """
-    spades.py --isolate -1 $forward -2 $reverse -t $task.cpus -m $mem -o working
-    cp working/contigs.fasta ${id}.contigs.fasta
-    cp working/scaffolds.fasta ${id}.scaffolds.fasta
-    """
-
+    if (forward.size() > 0 && reverse.size() > 0) // guard against empty file
+        """
+        spades.py --isolate -1 $forward -2 $reverse -t $task.cpus -m $mem -o working
+        cp working/contigs.fasta ${id}.contigs.fasta
+        cp working/scaffolds.fasta ${id}.scaffolds.fasta
+        """
 }
 
