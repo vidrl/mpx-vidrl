@@ -18,7 +18,7 @@ process Spades {
 
     if (forward.size() > 0 && reverse.size() > 0) // guard against empty file
         """
-        spades.py -1 $forward -2 $reverse -t $task.cpus -m $mem -o working
+        spades.py $params.spades_opts -1 $forward -2 $reverse -t $task.cpus -m $mem -o working
         cp working/contigs.fasta ${id}.contigs.fasta
         cp working/scaffolds.fasta ${id}.scaffolds.fasta
         """
