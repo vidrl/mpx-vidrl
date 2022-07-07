@@ -19,17 +19,17 @@ nextflow.enable.dsl=2
 
 include { check_file } from './utils'
 
-include { MinimapAlignCigarPAF as MinimapReferenceAlignment } from './core/minimap2' addParams(
+include { MinimapAlignCigarPAF as MinimapReferenceAlignment } from './modules/minimap2' addParams(
     stage: "reference_alignment",
     subdir: "alignments"
 )
-include { ExtractAligned } from './core/mgp_tools' addParams(
+include { ExtractAligned } from './modules/mgp_tools' addParams(
     stage: "reference_alignment",
     subdir: "extractions",
     extract_min_len: params.extract_min_qaln_len,
     extract_min_mapq: params.extract_min_mapq
 )
-include { SpadesIsolate } from './core/spades' addParams(
+include { SpadesIsolate } from './modules/spades' addParams(
     stage: "reference_alignment",
     subdir: "assembly"
 )
