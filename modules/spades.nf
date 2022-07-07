@@ -14,7 +14,7 @@ process SpadesIsolate {
 
     script:
 
-    mem = task.memory.replaceAll("[^0-9]", "")
+    mem = task.memory.toString().replaceAll("[^0-9]", "")
 
     """
     spades.py --isolate -1 $forward -2 $reverse -t $task.cpus -m $mem -o working
