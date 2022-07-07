@@ -85,18 +85,16 @@ workflow denovo_assembly {
 
 workflow {
 
-    // Staging references and reads
-
-    reference = check_file(params.reference)
-    host_index = check_file(params.host_index)
     reads = channel.fromFilePairs(params.fastq, flat: true)
 
     // Reference alignment and assembly of aligned reads
     if (params.reference_assembly){
+        reference = check_file(params.reference)
         reference_assembly(reads, reference)
     }
     // De novo assembly of host depleted reads
     if (params.denovo_assembly){
+        host_index = check_file(params.host_index)
         denovo_assembly(reads, host_index)
     }
 
