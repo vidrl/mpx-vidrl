@@ -24,7 +24,7 @@ process ExtractAligned {
             --input $reverse \
             --output ${id}_${idx_name}_aligned_1.fastq \
             --output ${id}_${idx_name}_aligned_2.fastq \
-            --min-len $params.extract_min_len \
+            --min-len $params.extract_min_qaln_len \
             --min-mapq $params.extract_min_mapq \
             --report ${id}_${idx_name}.json \
             --output-removed
