@@ -33,7 +33,7 @@ include { ExtractAligned } from './modules/mgp_tools' addParams(
     extract_min_len: params.extract_min_qaln_len,
     extract_min_mapq: params.extract_min_mapq
 )
-include { SpadesIsolate as ReferenceAssembly } from './modules/spades' addParams(
+include { Spades as ReferenceAssembly } from './modules/spades' addParams(
     stage: "reference_assembly",
     subdir: "assembly"
 )
@@ -63,7 +63,7 @@ include { DepleteAligned } from './modules/mgp_tools' addParams(
     extract_min_len: params.host_deplete_min_qaln_len,
     extract_min_mapq: params.host_deplete_min_mapq
 )
-include { SpadesIsolate as DenovoAssembly } from './modules/spades' addParams(
+include { Spades as DenovoAssembly } from './modules/spades' addParams(
     stage: "denovo_assembly",
     subdir: "assembly"
 )

@@ -1,4 +1,4 @@
-process SpadesIsolate {
+process Spades {
 
     tag { "$id : $idx_name" }
     label "spades"
@@ -18,7 +18,7 @@ process SpadesIsolate {
 
     if (forward.size() > 0 && reverse.size() > 0) // guard against empty file
         """
-        spades.py --isolate -1 $forward -2 $reverse -t $task.cpus -m $mem -o working
+        spades.py -1 $forward -2 $reverse -t $task.cpus -m $mem -o working
         cp working/contigs.fasta ${id}.contigs.fasta
         cp working/scaffolds.fasta ${id}.scaffolds.fasta
         """
