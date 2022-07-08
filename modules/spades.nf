@@ -10,7 +10,7 @@ process Spades {
 
     output:
     tuple val(id), file(forward), file(reverse)
-    tuple val(id), val("${id}.contigs.fasta"), val("${id}.scaffolds.fasta")
+    tuple val(id), file("${id}.contigs.fasta"), file("${id}.scaffolds.fasta")
 
     script:
 
