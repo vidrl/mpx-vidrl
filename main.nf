@@ -76,7 +76,7 @@ workflow denovo_assembly {
     main:
         qc_reads = Fastp(reads)
         host_aligned_reads = MinimapHostAlignment(qc_reads[0], host_index)
-        depleted_reads = DepleteAligned(aligned_reads[0], aligned_reads[1])
+        depleted_reads = DepleteAligned(host_aligned_reads[0], host_aligned_reads[1])
         assembly = DenovoAssembly(depleted_reads[0]) 
     emit:
         assembly[0]
