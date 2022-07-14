@@ -122,10 +122,12 @@ workflow {
         // Generate a consensus assembly against the current outbreak reference
         reference = check_file(params.reference)
         consensus_assembly(qc_reads[0], reference)
-    } else {
+    } else if (params.denovo_assembly) {
         // Generate a denovo assembly
         host_index = check_file(params.host_index)
         denovo_assembly(qc_reads[0], host_index)
+    } else {
+        error "\nRequired [set to `true`]: --reference_assembly | --consensus_assembly | --denovo_assembly"
     }
 }
 
