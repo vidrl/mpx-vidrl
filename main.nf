@@ -92,11 +92,15 @@ workflow {
     if (params.reference_assembly){
         reference = check_file(params.reference)
         reference_assembly(reads, reference)
-    }
-    // De novo assembly of host depleted reads
-    if (params.denovo_assembly){
+    } else {
         host_index = check_file(params.host_index)
         denovo_assembly(reads, host_index)
+    }
+
+    // Use assembled contigs to generate a consensus assembly 
+    // against the current outbreak reference
+    if (params.consensus_assembly){
+
     }
 
 }
