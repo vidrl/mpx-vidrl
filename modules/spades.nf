@@ -3,7 +3,7 @@ process Spades {
     tag { "$id : $idx_name" }
     label "spades"
 
-    publishDir "$params.outdir/$params.stage/$params.subdir", mode: "symlink", pattern: "${id}.*.fasta"
+    publishDir "$params.outdir/$params.stage/$params.subdir", mode: "symlink", pattern: "*.fasta"
 
     input:
     tuple val(id), file(forward), file(reverse)

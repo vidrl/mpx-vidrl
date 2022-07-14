@@ -7,7 +7,7 @@ vim: syntax=groovy
 
 Monkeypox assembly workflow
 
-@authors: Mona Taouk, Eike Steinig
+@authors: Eike Steinig, Mona Taouk
 
 */
 
