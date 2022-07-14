@@ -13,6 +13,7 @@ Monkeypox assembly workflow
 
 nextflow.enable.dsl=2
 
+// Change comment
 
 // Basic workflow using alignment against Monkeypox reference
 // and subsequent assembly of mapped reads
