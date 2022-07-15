@@ -112,7 +112,7 @@ workflow {
 
     if (params.host_depletion){
         host_index = check_file(params.host_index)
-        host_aligned_reads = MinimapHostAlignment(qc_reads, host_index)
+        host_aligned_reads = MinimapHostAlignment(qc_reads[0], host_index)
         depleted_reads = DepleteAligned(host_aligned_reads[0], host_aligned_reads[1])
         reads = depleted_reads[0]
     } else {
