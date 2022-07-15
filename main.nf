@@ -21,7 +21,7 @@ include { Fastp } from './modules/fastp' addParams(
 )
 include { MinimapAlignCigarPAF as MinimapReferenceAlignment } from './modules/minimap2' addParams(
     stage: "reference_assembly",
-    subdir: "alignments"
+    subdir: "alignments",
     align_label: "minimap2"
 )
 include { ExtractAligned } from './modules/mgp_tools' addParams(
@@ -51,7 +51,7 @@ workflow reference_assembly {
 
 include { MinimapAlignCigarPAF as MinimapHostAlignment } from './modules/minimap2' addParams(
     stage: "denovo_assembly",
-    subdir: "host_alignments"
+    subdir: "host_alignments",
     align_label: "minimap2_host"
 )
 include { DepleteAligned } from './modules/mgp_tools' addParams(
