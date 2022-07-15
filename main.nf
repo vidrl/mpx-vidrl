@@ -69,7 +69,6 @@ include { Spades as DenovoAssembly } from './modules/spades' addParams(
 workflow denovo_assembly {
     take:
         reads
-        host_index
     main:
         assembly = DenovoAssembly(depleted_reads[0]) 
     emit:
@@ -112,6 +111,7 @@ workflow {
     qc_reads = Fastp(reads)
 
     if (params.host_depletion){
+        host_index = check_file(params.host_index)
         host_aligned_reads = MinimapHostAlignment(reads, host_index)
         depleted_reads = DepleteAligned(host_aligned_reads[0], host_aligned_reads[1])
         reads = depleted_reads[0]
@@ -129,8 +129,7 @@ workflow {
         consensus_assembly(reads, reference)
     } else if (params.denovo_assembly) {
         // Generate a denovo assembly
-        host_index = check_file(params.host_index)
-        denovo_assembly(reads, host_index)
+        denovo_assembly(reads)
     } else {
         error "\nRequired argument mising (--reference_assembly | --consensus_assembly | --denovo_assembly)  [set to `true`]"
     }
