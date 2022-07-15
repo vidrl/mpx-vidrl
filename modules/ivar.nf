@@ -18,8 +18,8 @@ process IvarConsensus {
 
     """
     samtools mpileup -d $params.mpileup_max_depth -A -Q 0 $bam | ivar consensus -p ${id}.consensus \
-        -q $params.ivar_consensus_min_base_quality \
-        -t $params.ivar_consensus_min_frequency \
+        -q $params.ivar_consensus_min_qual \
+        -t $params.ivar_consensus_min_freq \
         -m $params.ivar_consensus_min_depth \
         -n $params.ivar_consensus_fill_char
     mv ${id}.consensus.fa ${id}.consensus.fasta
