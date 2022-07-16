@@ -114,22 +114,22 @@ workflow {
         host_index = check_file(params.host_index)
         host_aligned_reads = MinimapHostAlignment(qc_reads[0], host_index)
         depleted_reads = DepleteAligned(host_aligned_reads[0], host_aligned_reads[1])
-        reads = depleted_reads[0]
+        assembly_reads = depleted_reads[0]
     } else {
-        reads = qc_reads[0]
+        assembly_reads = qc_reads[0]
     }
 
     if (params.reference_assembly){
         // Reference alignment and assembly of aligned reads
         reference = check_file(params.reference)
-        reference_assembly(reads, reference)
+        reference_assembly(assembly_reads, reference)
     } else if (params.consensus_assembly) {
         // Generate a consensus assembly against the current outbreak reference
         reference = check_file(params.reference)
-        consensus_assembly(reads, reference)
+        consensus_assembly(assembly_reads, reference)
     } else if (params.denovo_assembly) {
         // Generate a denovo assembly
-        denovo_assembly(reads)
+        denovo_assembly(assembly_reads)
     } else {
         error "\nRequired argument mising (--reference_assembly | --consensus_assembly | --denovo_assembly)  [set to `true`]"
     }
