@@ -114,13 +114,18 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
             [sample[2] for _, data in sorted_samples.items() for sample in data],
             columns=["Sample", "Reads", "QC Reads", "Alignments", "Coverage", "Mean Depth", "Missing", "Completeness"]
         )
-        print(df)
 
     table = Table(title=title)
     for cname in df.columns:
         table.add_column(cname, justify="left", no_wrap=False)
     for _, row in df.iterrows():
-        field_str = [str(s) for s in row]
+        if row["Completeness"] >= 99.9:
+            row_color = "green"
+        elif 98 < row["Completeness"] < 99.9:
+            row_color = "orange"
+        else:
+            row_color = "red"
+        field_str = [f"[{row_color}]{s}" for s in row]
         table.add_row(*field_str)
     return table
 
