@@ -256,6 +256,6 @@ def snp_distance(dist: Path):
                     print("All are NaN")
                     continue
                 else:
-                    median_between = median(between_patients)
+                    median_between = median([v for v in between_patients.values.flatten()])
 
             rprint(f"Between patient median SNP distance: [yellow]{median_between}[/yellow]")
