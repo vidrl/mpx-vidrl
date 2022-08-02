@@ -247,8 +247,15 @@ def snp_distance(dist: Path):
             if isinstance(between_patients, numpy.float64) and numpy.isnan(between_patients):
                 # Single isolate vs. single isolate where value is nan
                 continue
+            elif isinstance(between_patients, numpy.float64):
+                # Single isolate vs. single isolate where value is present
+                median_between = median([between_patients])
             else:
                 nan_check = np.isnan(between_patients.values).all()
                 if nan_check:
                     print("All are NaN")
+                    continue
+                else:
+                    median_between = median(between_patients)
 
+            rprint(f"Between patient median SNP distance: [yellow]{median_between}[/yellow]")
