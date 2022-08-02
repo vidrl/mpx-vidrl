@@ -1,6 +1,6 @@
 import typer 
 from pathlib import Path
-from report import quality_control_consensus
+from .report import quality_control_consensus
 
 app = typer.Typer()
 
