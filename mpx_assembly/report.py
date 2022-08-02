@@ -79,7 +79,7 @@ def get_consensus_assembly_data(file: Path) -> (float or None, int):
     return completeness, ncount
 
 
-def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = False):
+def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = True):
 
     df = pandas.DataFrame(
         [sample.to_list() for sample in samples],
