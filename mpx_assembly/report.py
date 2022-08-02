@@ -13,7 +13,7 @@ from rich import print as rprint
 from dataclasses import dataclass
 from typing import Optional, List
 import numpy as np
-from statistics import median
+from statistics import median, mean
 
 @dataclass
 class SampleFiles:
@@ -234,17 +234,17 @@ def snp_distance(dist: Path):
 
         within_data.append([patient, patient, within_median])
 
-        rprint(
-            f"Within patient [red]{patient}[/red] (n = {patients.count(patient)}) "
-            f"median SNP distance: [yellow]{within_median}[/yellow]"
-        )
+        # rprint(
+        #     f"Within patient [red]{patient}[/red] (n = {patients.count(patient)}) "
+        #     f"median SNP distance: [yellow]{within_median}[/yellow]"
+        # )
 
         # Between patient distances
         other_patients = [p for p in patients_unique if p != patient]
 
         for other_patient in other_patients:
             between_patients = dist_lower.loc[patient, other_patient]
-            rprint(f"[red]{patient} <--> {other_patient}[/red]")
+            # rprint(f"[red]{patient} <--> {other_patient}[/red]")
             # Ignore if all nan, the other combination will have the values:
             if isinstance(between_patients, numpy.float64) and numpy.isnan(between_patients):
                 # Single isolate vs. single isolate where value is nan
@@ -259,7 +259,7 @@ def snp_distance(dist: Path):
                 else:
                     median_between = median([v for v in between_patients.values.flatten()])
 
-            rprint(f"Between patient median SNP distance: [yellow]{median_between}[/yellow]")
+            # rprint(f"Between patient median SNP distance: [yellow]{median_between}[/yellow]")
             if not np.isnan(median_between):
                 # Sort the patient identifiers (sortable) to fill only single trriangle of matrix
                 combo = sorted([patient, other_patient]) + [median_between]
@@ -277,3 +277,10 @@ def snp_distance(dist: Path):
         df.loc[data[0], data[1]] = data[2]
 
     rprint(df)
+    all_between = [d[2] for d in between_data]
+    all_within = [d[2] for d in within_data if not np.isnan(d[2])]
+
+    print(f"Median total within: {median(all_within)}")
+    print(f"Mean total within: {mean(all_within)}")
+    print(f"Median total between: {median(all_between)}")
+    print(f"Mean total between: {mean(all_between)}")
