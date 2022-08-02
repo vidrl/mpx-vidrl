@@ -9,7 +9,7 @@ setup(
     include_package_data=True,
     install_requires=[
         "typer",
-        "fastx"
+        "pyfastaq"
     ],
     entry_points="""
     [console_scripts]
