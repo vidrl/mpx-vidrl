@@ -11,7 +11,7 @@ from rich import print as rprint
 from dataclasses import dataclass
 from typing import Optional, List
 import numpy as np
-
+from statistics import median
 
 @dataclass
 class SampleFiles:
@@ -192,6 +192,13 @@ def quality_control_consensus(consensus_results: Path):
     rprint(table)
 
 
+@dataclass
+class SampleDistance:
+    patient: str
+    samples: int
+    within_median: float
+
+
 def snp_distance(dist: Path):
     """
     Compute median SNP distance within and between patients
@@ -218,6 +225,9 @@ def snp_distance(dist: Path):
         within_patient = dist_lower.loc[patient, patient]
         print(within_patient)
         print(within_patient.values)
-        distances = [v for v in within_patient.values.flatten() if not np.isnan(v)]
-        print(distances)
-
+        if np.isnan(within_patient):
+            pass
+        else:
+            distances = [v for v in within_patient.values.flatten() if not np.isnan(v)]
+            within_median = median(distances)
+            print(within_median)
