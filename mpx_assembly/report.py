@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 import json
-from pyfastaq import sequences
+from pyfastx import Fastx
 
 @dataclass
 class SampleFiles:
@@ -51,12 +51,9 @@ def get_consensus_assembly_data(file: Path) -> float:
     """
     Get consensus sequence and missing site proportion (N) - should only have a single sequence
     """
-    print(str(file))
-    seq_data = [seq for seq in sequences.file_reader(str(file))]
-    print(seq_data)
-    seq = seq_data[0]
-    print(dir(seq))
-    print(seq.seq, seq.id)
+
+    seq_data = [seq for seq in Fastx(str(file), uppercase=True, build_index=False)]
+    seq = seq_data[0][1]
     return (1 - (seq.upper().count("N") / len(seq)))*100
 
 
