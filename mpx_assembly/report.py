@@ -82,11 +82,13 @@ def get_consensus_assembly_data(file: Path) -> (float or None, int):
 def create_rich_table(samples: List[SampleQC], title: str):
 
     df = pandas.DataFrame(
-        data=[sample.to_list() for sample in samples],
+        [sample.to_list() for sample in samples],
         columns=["Sample", "Reads", "QC Reads", "Alignments", "Coverage", "Mean Depth", "Missing", "Completeness"]
     )
 
     df = df.sort_values(["Sample", "Completeness", "Coverage", "Mean Depth"])
+
+    print(df)
 
     table = Table(title=title)
     for cname in df.columns:
