@@ -209,7 +209,7 @@ def snp_distance(dist: Path):
             sample2 = content[1].split(".")[0].replace("Consensus_", "")
             sample2_patient = sample2.split("_")[1]
 
-            dist = content[2]
+            dist = int(content[2])
 
             if sample1 != sample2:  # ignore diagonal zeros, note that distance matrix is symmetrical
 
