@@ -261,7 +261,7 @@ def snp_distance(dist: Path):
             rprint(f"Between patient median SNP distance: [yellow]{median_between}[/yellow]")
             if not np.isnan(median_between):
                 # Sort the patient identifiers (sortable) to fill only single trriangle of matrix
-                combo = sorted([patient, other_patient]) + [between_patients]
+                combo = sorted([patient, other_patient]) + [median_between]
                 between_data.append(combo)
 
     print(between_data)
