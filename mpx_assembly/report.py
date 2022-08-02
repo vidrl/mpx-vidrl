@@ -54,7 +54,7 @@ def get_consensus_assembly_data(file: Path) -> float:
     """
     seq_data = [seq for seq in Fastx(file)]
     seq = seq_data[0][1]
-    return 1 - (seq.upper().count("N") / len(seq))
+    return (1 - (seq.upper().count("N") / len(seq)))*100
 
 
 def quality_control_consensus(consensus_results: Path):
@@ -62,7 +62,7 @@ def quality_control_consensus(consensus_results: Path):
     """ Create a quality control table from the coverage data and consensus sequences """
 
     coverage_data = {
-        sample.name.replace(".json", ""): sample
+        sample.name.replace(".txt", ""): sample
         for sample in (consensus_results / "coverage").glob("*.txt")
     }
     fastp_data = {
@@ -80,14 +80,22 @@ def quality_control_consensus(consensus_results: Path):
             samtools=coverage_data.get(name)
         )
 
-    print(combined_files)
-
     for sample, sample_files in combined_files.items():
         print(f"Processing quality control data for sample: {sample}")
 
-        all_reads, qc_reads = get_fastp_data(sample_files.fastp)
-        aligned_reads, coverage, mean_depth = get_samtools_data(sample_files.samtools)
-        completeness = get_consensus_assembly_data(sample_files.assembly)
+        try:
+            all_reads, qc_reads = get_fastp_data(sample_files.fastp)
+        except AttributeError:  # File is None
+            all_reads, qc_reads = None, None
+        try:
+            aligned_reads, coverage, mean_depth = get_samtools_data(sample_files.samtools)
+        except AttributeError:  # File is None
+            aligned_reads, coverage, mean_depth = None, None, None
+
+        try:
+            completeness = get_consensus_assembly_data(sample_files.assembly)
+        except AttributeError:
+            completeness = None
 
         qc = SampleQC(
             name=sample,
@@ -96,7 +104,7 @@ def quality_control_consensus(consensus_results: Path):
             aligned_reads=aligned_reads,
             coverage=coverage,
             mean_depth=mean_depth,
-            completeness=completeness*100
+            completeness=completeness
         )
 
         print(qc)
