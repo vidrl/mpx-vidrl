@@ -225,6 +225,7 @@ def snp_distance(dist: Path):
     for patient in patients_unique:
         # Within patient distances
         within_patient = dist_lower.loc[patient, patient]
+        print(within_patient)
         if isinstance(within_patient, numpy.float64) and numpy.isnan(within_patient):
             within_median = 0.
         else:
