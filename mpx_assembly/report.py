@@ -210,9 +210,12 @@ def snp_distance(dist: Path):
     dist_mat.columns = patients
 
     dist_lower = dist_mat.mask(np.triu(np.ones(dist_mat.shape, dtype=np.bool_)))
-    print(dist_lower)
 
-    # Within patient distances
+    patients_unique = sorted(list(set(patients)))
 
+    for patient in patients_unique:
+        # Within patient distances
+        within_patient = dist_lower.loc[patient, patient]
+        print(within_patient)
 
 
