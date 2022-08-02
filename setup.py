@@ -9,7 +9,8 @@ setup(
     include_package_data=True,
     install_requires=[
         "typer",
-        "pyfastx"
+        "pyfastx",
+        "rich"
     ],
     entry_points="""
     [console_scripts]
