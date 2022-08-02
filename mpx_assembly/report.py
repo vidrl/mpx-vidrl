@@ -23,6 +23,7 @@ class SampleQC:
     aligned_reads: Optional[int]
     coverage: Optional[float]
     mean_depth: Optional[float]
+    missing_sites: Optional[int]
     completeness: Optional[float]
 
 
@@ -47,14 +48,16 @@ def get_samtools_data(file: Path) -> (int, float, float):
     return int(content[3]), float(content[5]), float(content[6])  # numreads, coverage, meandepth
 
 
-def get_consensus_assembly_data(file: Path) -> float:
+def get_consensus_assembly_data(file: Path) -> (float, int):
     """
     Get consensus sequence and missing site proportion (N) - should only have a single sequence
     """
 
     seq_data = [seq for seq in Fasta(str(file), uppercase=True, build_index=False)]
     seq = seq_data[0][1]
-    return (1 - (seq.upper().count("N") / len(seq)))*100
+    ncount = seq.count("N")
+    completeness = 100 - ((ncount / len(seq))*100)
+    return completeness, ncount
 
 
 def quality_control_consensus(consensus_results: Path):
@@ -83,17 +86,9 @@ def quality_control_consensus(consensus_results: Path):
     for sample, sample_files in combined_files.items():
         print(f"Processing quality control data for sample: {sample}")
 
-        try:
-            all_reads, qc_reads = get_fastp_data(sample_files.fastp)
-        except AttributeError:  # File is None
-            all_reads, qc_reads = None, None
-        try:
-            aligned_reads, coverage, mean_depth = get_samtools_data(sample_files.samtools)
-        except AttributeError:  # File is None
-            aligned_reads, coverage, mean_depth = None, None, None
-
-        completeness = get_consensus_assembly_data(sample_files.assembly)
-
+        all_reads, qc_reads = get_fastp_data(sample_files.fastp)
+        aligned_reads, coverage, mean_depth = get_samtools_data(sample_files.samtools)
+        completeness, missing = get_consensus_assembly_data(sample_files.assembly)
 
         qc = SampleQC(
             name=sample,
@@ -102,6 +97,7 @@ def quality_control_consensus(consensus_results: Path):
             aligned_reads=aligned_reads,
             coverage=coverage,
             mean_depth=mean_depth,
+            missing_sites=missing,
             completeness=completeness
         )
 
