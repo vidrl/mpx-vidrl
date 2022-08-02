@@ -120,7 +120,8 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
         if cname != "Sample":
             justify = "right"
         else:
-            justidy = "left"
+            justify = "left"
+            
         table.add_column(cname, justify=justify, no_wrap=False)
     for _, row in df.iterrows():
         if row["Completeness"] >= 99.9:
