@@ -1,14 +1,19 @@
 import typer 
 from pathlib import Path
+from .report import quality_control_consensus
+
 
 app = typer.Typer()
 
+
 @app.command()
 def report(
-    consensus: Path = typer.Argument(..., help="Output path of the Nextflow pipeline for consensus genome assembly")
+    consensus_results: Path = typer.Argument(
+        ..., help="Output path of the Nextflow pipeline for consensus genome assembly"
+    )
 ):
     """
     Main report interface to generate the report file from one or multiple samples
     """
-    
-    pass
+    quality_control_consensus(consensus_results=consensus_results)
+
