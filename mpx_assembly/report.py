@@ -15,6 +15,7 @@ from typing import Optional, List
 import numpy as np
 from statistics import median, mean
 
+
 @dataclass
 class SampleFiles:
     assembly: Path
@@ -217,6 +218,8 @@ def snp_distance(dist: Path):
     dist_mat.columns = patients
 
     dist_lower = dist_mat.mask(np.triu(np.ones(dist_mat.shape, dtype=np.bool_)))
+
+    rprint(dist_lower)
 
     patients_unique = sorted(list(set(patients)))
 
