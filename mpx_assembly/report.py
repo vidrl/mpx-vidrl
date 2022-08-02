@@ -92,9 +92,18 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
         # Sort first by sample patient identifier then number of that patient sample
         # must comply with Mona's format: ID_{Patient}_{Number} e.g. MPX_A_1 and MPX_A_2
 
-        for sample, sdf in df.groupby(by=lambda x: x["Sample"].split("_")[1]):
-            print(sample, sdf)
+        patient_samples = {}
+        for i, row in df.iterrows():
+            sample_id = row["Sample"]
+            sample_content = sample_id.split("_")
+            patient_id = sample_content[1]
+            sample_number = sample_content[2]
 
+            if patient_id not in patient_samples.keys():
+                patient_samples[patient_id] = [(row.index, sample_number, sample_id)]
+            else:
+                patient_samples[patient_id].append((row.index, sample_number, sample_id))
+                
     print(df)
 
     table = Table(title=title)
