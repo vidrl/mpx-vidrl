@@ -91,7 +91,7 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
     else:
         # Sort first by sample patient identifier then number of that patient sample
         # must comply with Mona's format: ID_{Patient}_{Number} e.g. MPX_A_1 and MPX_A_2
-
+        # Requires unsorted dataframe or regenerated index on a sorted dataframe
         patient_samples = {}
         for i, row in df.iterrows():
             sample_id = row["Sample"]
@@ -105,8 +105,6 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
                 patient_samples[patient_id].append((i, sample_number, sample_id))
 
         print(patient_samples)
-
-    print(df)
 
     table = Table(title=title)
     for cname in df.columns:
