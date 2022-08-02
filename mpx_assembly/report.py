@@ -276,4 +276,4 @@ def snp_distance(dist: Path):
     for data in within_data:
         df.loc[data[0], data[1]] = data[2]
 
-    print(df)
+    rprint(df)
