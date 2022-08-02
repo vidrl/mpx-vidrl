@@ -1,6 +1,6 @@
 import typer 
 from pathlib import Path
-from .report import quality_control_consensus
+from .report import quality_control_consensus, snp_distance
 
 app = typer.Typer(add_completion=False)
 
@@ -15,6 +15,18 @@ def consensus(
     )
 ):
     """
-    Main report interface to generate the report file from one or multiple samples
+    QC
     """
     quality_control_consensus(consensus_results=results)
+
+
+@report.command()
+def snp_dist(
+    dist: Path = typer.Argument(
+        ..., help="Pairwise SNP distance matrix in long form e.g. from PSDM"
+    )
+):
+    """
+    SNP distances
+    """
+    snp_distance(dist=dist)

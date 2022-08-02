@@ -1,15 +1,16 @@
 """
 Monkeypox assembly report
 """
-import pandas
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Optional, List
+
 import json
+import pandas
+from pathlib import Path
 from pyfastx import Fasta
 from rich.table import Table
 from rich import print as rprint
-import pandas
+from dataclasses import dataclass
+from typing import Optional, List
+
 
 @dataclass
 class SampleFiles:
@@ -91,7 +92,6 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
     else:
         # Sort first by sample patient identifier then number of that patient sample
         # must comply with Mona's format: ID_{Patient}_{Number} e.g. MPX_A_1 and MPX_A_2
-        # Requires unsorted dataframe or regenerated index on a sorted dataframe
         patient_samples = {}
         for i, row in df.iterrows():
             sample_id = row["Sample"]
@@ -100,19 +100,28 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
             sample_number = sample_content[2]
 
             if patient_id not in patient_samples.keys():
-                patient_samples[patient_id] = [(i, int(sample_number), row.tolist())]
+                patient_samples[patient_id] = [(int(sample_number), row.tolist())]
             else:
-                patient_samples[patient_id].append((i, int(sample_number), row.tolist()))
+                patient_samples[patient_id].append((int(sample_number), row.tolist()))
 
         sorted_patient_samples = {}
         for patient_id, patient_data in patient_samples.items():
-            sorted_patient_samples[patient_id] = sorted(patient_data, key=lambda x: x[1])
+            sorted_patient_samples[patient_id] = sorted(patient_data, key=lambda x: x[0])
 
         sorted_samples = dict(sorted(sorted_patient_samples.items()))  # Python 3.7+
         rprint(sorted_samples)
         df = pandas.DataFrame(
-            [sample[2] for _, data in sorted_samples.items() for sample in data],
-            columns=["Sample", "Reads", "QC Reads", "Alignments", "Coverage", "Mean Depth", "Missing", "Completeness"]
+            [sample[1] for _, data in sorted_samples.items() for sample in data],
+            columns=[
+                "Sample",
+                "Reads",
+                "QC Reads",
+                "Alignments",
+                "Coverage",
+                "Mean Depth",
+                "Missing (N)",
+                "Completeness"
+            ]
         )
 
     table = Table(title=title)
@@ -121,7 +130,6 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
             justify = "right"
         else:
             justify = "left"
-            
         table.add_column(cname, justify=justify, no_wrap=False)
     for _, row in df.iterrows():
         if row["Completeness"] >= 99.9:
@@ -181,3 +189,42 @@ def quality_control_consensus(consensus_results: Path):
 
     table = create_rich_table(samples, title="Monkeypox QC")
     rprint(table)
+
+
+def snp_distance(dist: Path):
+    """
+    Compute median SNP distance within and between patients
+    SAmple identifiers conform to Mona's scheme: MPX_A_1 etc.
+    """
+
+    patient_distances = {}
+    with dist.open() as dist_file:
+        for line in dist_file:
+            content = line.strip().split(",")
+
+            # Sample names are wrapped by identifiers from iVar
+            sample1 = content[0].split(".")[0].replace("Consensus_", "")
+            sample1_patient = sample1.split("_")[1]
+
+            sample2 = content[1].split(".")[0].replace("Consensus_", "")
+            sample2_patient = sample1.split("_")[1]
+
+            dist = content[2]
+
+            if sample1 != sample2:  # ignore diagonal zeros, note that distance matrix is symmetrical
+
+                if sample1_patient == sample2_patient:  # within patient
+                    if sample1_patient not in patient_distances.keys():  # will have duplcated dists
+                        patient_distances[sample1_patient] = [dist]
+                    else:
+                        patient_distances[sample1_patient].append(dist)
+                else:
+                    comparison = f"{sample1_patient}-{sample2_patient}"
+                    if comparison not in patient_distances.keys():
+                        patient_distances[comparison] = [dist]
+                    else:
+                        patient_distances[comparison].append(dist)
+
+    rprint(patient_distances)
+
+
