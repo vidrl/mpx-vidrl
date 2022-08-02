@@ -91,10 +91,8 @@ def quality_control_consensus(consensus_results: Path):
         except AttributeError:  # File is None
             aligned_reads, coverage, mean_depth = None, None, None
 
-        try:
-            completeness = get_consensus_assembly_data(sample_files.assembly)
-        except AttributeError:
-            completeness = None
+        completeness = get_consensus_assembly_data(sample_files.assembly)
+
 
         qc = SampleQC(
             name=sample,
