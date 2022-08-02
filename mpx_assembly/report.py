@@ -209,8 +209,6 @@ def snp_distance(dist: Path):
 
     dist_mat = pandas.read_csv(dist, index_col=0)
 
-    print(dist_mat)
-
     # Replace column and index names with extracted patient identifier
 
     patients = [c.split(".")[0].replace("Consensus_", "").split("_")[1] for c in dist_mat.columns]
@@ -219,6 +217,8 @@ def snp_distance(dist: Path):
     dist_mat.columns = patients
 
     dist_lower = dist_mat.mask(np.triu(np.ones(dist_mat.shape, dtype=np.bool_)))
+
+    print(dist_lower)
 
     patients_unique = sorted(list(set(patients)))
 
@@ -243,5 +243,5 @@ def snp_distance(dist: Path):
         for other_patient in other_patients:
             between_patients = dist_lower.loc[patient, other_patient]
             rprint(f"[red]{patient} <--> {other_patient}[/red]")
-            rprint(between_patients)
+            print(between_patients)
 
