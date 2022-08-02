@@ -113,6 +113,7 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
             [data[2] for _, data in sorted_samples.items()],
             columns=["Sample", "Reads", "QC Reads", "Alignments", "Coverage", "Mean Depth", "Missing", "Completeness"]
         )
+        print(df)
         rprint(sorted_samples)
 
     table = Table(title=title)
