@@ -244,7 +244,11 @@ def snp_distance(dist: Path):
             between_patients = dist_lower.loc[patient, other_patient]
             rprint(f"[red]{patient} <--> {other_patient}[/red]")
             # Ignore if all nan, the other combination will have the values:
-
-            nan_check = np.isnan(between_patients.values)
-            print(nan_check)
+            if isinstance(between_patients, numpy.float64) and numpy.isnan(within_patient):
+                # Single isolate vs. single isolate where value is nan
+                continue
+            else:
+                nan_check = np.isnan(between_patients.values).all()
+                if nan_check:
+                    print("All are NaN")
 
