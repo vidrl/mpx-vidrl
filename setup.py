@@ -11,7 +11,8 @@ setup(
         "typer",
         "pyfastx",
         "rich",
-        "pandas"
+        "pandas",
+        "numpy"
     ],
     entry_points="""
     [console_scripts]

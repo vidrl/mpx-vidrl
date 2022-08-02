@@ -10,6 +10,7 @@ from rich.table import Table
 from rich import print as rprint
 from dataclasses import dataclass
 from typing import Optional, List
+import numpy as np
 
 
 @dataclass
@@ -208,7 +209,8 @@ def snp_distance(dist: Path):
     dist_mat.index = patients
     dist_mat.columns = patients
 
-    print(dist_mat)
+    dist_lower = dist_mat.mask(np.triu(np.ones(dist_mat.shape, dtype=np.bool_)))
+    print(dist_lower)
 
     # Within patient distances
 
