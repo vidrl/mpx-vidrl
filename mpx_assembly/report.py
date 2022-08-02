@@ -223,6 +223,7 @@ def snp_distance(dist: Path):
     patients_unique = sorted(list(set(patients)))
 
     for patient in patients_unique:
+
         # Within patient distances
         within_patient = dist_lower.loc[patient, patient]
         if isinstance(within_patient, numpy.float64) and numpy.isnan(within_patient):
@@ -232,6 +233,15 @@ def snp_distance(dist: Path):
             within_median = median(distances)
 
         rprint(
-            f"Within patient [red]{patient}[/red] (n = {patients.count(patient)})"
-            f" median SNP distance: [yellow]{within_median}[/yellow]"
+            f"Within patient [red]{patient}[/red] (n = {patients.count(patient)}) "
+            f"median SNP distance: [yellow]{within_median}[/yellow]"
         )
+
+        # Between patient distances
+        other_patients = [p for p in patients_unique if p != patient]
+
+        for other_patient in other_patients:
+            between_patients = dist_lower.loc[patient, other_patient]
+            rprint(f"[red]{patient} <--> {other_patient}[/red]")
+            rprint(between_patients)
+
