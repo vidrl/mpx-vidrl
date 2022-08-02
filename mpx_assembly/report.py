@@ -264,5 +264,5 @@ def snp_distance(dist: Path):
                 combo = sorted([patient, other_patient]) + [median_between]
                 between_data.append(combo)
 
-    print(between_data)
+    rprint(sorted(between_data, key=lambda x: x[0]))
     print(len(between_data), len(patients))
