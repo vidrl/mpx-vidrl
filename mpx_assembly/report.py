@@ -232,3 +232,5 @@ def snp_distance(dist: Path):
         else:
             distances = [v for v in within_patient.values.flatten() if not np.isnan(v)]
             within_median = median(distances)
+
+        print(f"Within patient {patient} median SNP distance: {within_median}")
