@@ -86,10 +86,13 @@ include { MinimapAlignSortedBam } from './modules/minimap2' addParams(
     stage: "consensus_assembly",
     subdir: "alignments"
 )
-
 include { IvarConsensus } from './modules/ivar' addParams(
     stage: "consensus_assembly",
     subdir: "consensus"
+)
+include { SamtoolsCoverage } from './modules/samtools' addParams(
+    stage: "consensus_assembly",
+    subdir: "coverage"
 )
 
 workflow consensus_assembly {
@@ -98,11 +101,9 @@ workflow consensus_assembly {
         reference
     main:
         aligned_reads = MinimapAlignSortedBam(reads, reference)
-        // NB for Mona: We are using only a single reference ever, so it's fine to use
-        // it in both processes - if using a channel of multiple references, this might
-        // generate wrong combinations of Minimap and Ivar reference files, and it would
-        // be better to pass the reference used in Minimap in its output to Ivar directly
         consensus_assembly = IvarConsensus(aligned_reads, reference)
+        coverage = SamtoolsCoverage(aligned_reads)
+
     emit:
         consensus_assembly
 }
