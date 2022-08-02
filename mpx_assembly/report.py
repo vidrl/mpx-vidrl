@@ -1,7 +1,7 @@
 """
 Monkeypox assembly report
 """
-
+import pandas
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, List
@@ -78,13 +78,21 @@ def get_consensus_assembly_data(file: Path) -> (float or None, int):
     return completeness, ncount
 
 
+
 def create_rich_table(samples: List[SampleQC], title: str):
 
+    df = pandas.DataFrame(
+        data=[sample.to_list() for sample in samples],
+        columns=["Sample", "Reads", "QC Reads", "Alignments", "Coverage", "Mean Depth", "Missing", "Completeness"]
+    )
+
+    df = df.sort_values(["Sample", "Completeness", "Coverage", "Mean Depth"])
+
     table = Table(title=title)
-    for cname in ["Sammple", "Reads", "QC Reads", "Alignments", "Coverage", "Mean Depth", "Missing", "Completeness"]:
+    for cname in df.columns:
         table.add_column(cname, justify="left", no_wrap=False)
-    for sample in samples:
-        field_str = [str(s) for s in sample.to_list()]
+    for _, row in samples:
+        field_str = [str(s) for s in row]
         table.add_row(*field_str)
     return table
 
@@ -114,8 +122,6 @@ def quality_control_consensus(consensus_results: Path):
 
     samples = []
     for sample, sample_files in combined_files.items():
-        print(f"Processing quality control data for sample: {sample}")
-
         all_reads, qc_reads = get_fastp_data(sample_files.fastp)
         aligned_reads, coverage, mean_depth = get_samtools_data(sample_files.samtools)
         completeness, missing = get_consensus_assembly_data(sample_files.assembly)
