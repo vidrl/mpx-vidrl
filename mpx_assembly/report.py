@@ -53,7 +53,8 @@ def get_consensus_assembly_data(file: Path) -> float:
     """
     seq_data = [seq for seq in sequences.file_reader(str(file))]
     print(seq_data)
-    seq = seq_data[0].seq
+    seq = seq_data[0]
+    print(seq.seq, seq.id)
     return (1 - (seq.upper().count("N") / len(seq)))*100
 
 
