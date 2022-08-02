@@ -218,11 +218,10 @@ def snp_distance(dist: Path):
 
     dist_lower = dist_mat.mask(np.triu(np.ones(dist_mat.shape, dtype=np.bool_)))
 
-    print(dist_lower)
-
     patients_unique = sorted(list(set(patients)))
 
     between_data = []
+    within_data = []
     for patient in patients_unique:
 
         # Within patient distances
@@ -232,6 +231,8 @@ def snp_distance(dist: Path):
         else:
             distances = [v for v in within_patient.values.flatten() if not np.isnan(v)]
             within_median = median(distances)
+
+        within_data.append([patient, patient, within_median])
 
         rprint(
             f"Within patient [red]{patient}[/red] (n = {patients.count(patient)}) "
@@ -264,10 +265,15 @@ def snp_distance(dist: Path):
                 combo = sorted([patient, other_patient]) + [median_between]
                 between_data.append(combo)
 
-    long_form_lower = sorted(between_data, key=lambda x: x[0])
+    long_form_upper = sorted(between_data, key=lambda x: x[0])
     df = pandas.DataFrame(np.nan, index=patients_unique, columns=patients_unique)
 
-    for data in long_form_lower:
+    # Fill in upper triangle with between patient distances
+    for data in long_form_upper:
+        df.loc[data[0], data[1]] = data[2]
+        
+    # Fill in diagonal with within patient distances
+    for data in within_data:
         df.loc[data[0], data[1]] = data[2]
 
     print(df)
