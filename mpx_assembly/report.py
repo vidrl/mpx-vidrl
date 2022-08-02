@@ -197,31 +197,22 @@ def snp_distance(dist: Path):
     SAmple identifiers conform to Mona's scheme: MPX_A_1 etc.
     """
 
-    patient_distances = {}
-    with dist.open() as dist_file:
-        for line in dist_file:
-            content = line.strip().split(",")
+    dist_mat = pandas.read_csv(dist, index_col=0)
 
-            # Sample names are wrapped by identifiers from iVar
-            sample1 = content[0].split(".")[0].replace("Consensus_", "")
-            sample1_patient = sample1.split("_")[1]
+    print(dist_mat)
+    
+    # Replace column and index names with extracted patient identifier
 
-            sample2 = content[1].split(".")[0].replace("Consensus_", "")
-            sample2_patient = sample2.split("_")[1]
+    patients = [c.split("_")[1] for c in dist_mat.columns]
 
-            dist = int(content[2])
+    dist_mat.index = patients
+    dist_mat.columns = patients
 
-            if sample1_patient == sample2_patient:  # within patient
-                if sample1_patient not in patient_distances.keys():  # will have duplcated dists
-                    patient_distances[sample1_patient] = [dist]
-                else:
-                    patient_distances[sample1_patient].append(dist)
-            else:
-                comparison = f"{sample1_patient}-{sample2_patient}"
-                if comparison not in patient_distances.keys():
-                    patient_distances[comparison] = [dist]
-                else:
-                    patient_distances[comparison].append(dist)
+    print(dist_mat)
+
+    # Within patient distances
+
+
 
     rprint(patient_distances)
 
