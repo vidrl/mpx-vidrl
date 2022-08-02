@@ -264,5 +264,10 @@ def snp_distance(dist: Path):
                 combo = sorted([patient, other_patient]) + [median_between]
                 between_data.append(combo)
 
-    rprint(sorted(between_data, key=lambda x: x[0]))
-    print(len(between_data), len(patients))
+    long_form_lower = sorted(between_data, key=lambda x: x[0])
+    df = pandas.DataFrame(np.nan, index=patients_unique, columns=patients_unique)
+
+    for data in long_form_lower:
+        df.loc[data[0], data[1]] = data[2]
+
+    print(df)
