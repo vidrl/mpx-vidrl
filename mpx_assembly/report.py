@@ -52,7 +52,7 @@ def get_consensus_assembly_data(file: Path) -> float:
     Get consensus sequence and missing site proportion (N) - should only have a single sequence
     """
     seq_data = [seq for seq in sequences.file_reader(file)]
-    seq = seq_data[0][1]
+    seq = seq_data[0].seq
     return (1 - (seq.upper().count("N") / len(seq)))*100
 
 
