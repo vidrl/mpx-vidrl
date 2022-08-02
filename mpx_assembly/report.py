@@ -93,7 +93,7 @@ def create_rich_table(samples: List[SampleQC], title: str):
     table = Table(title=title)
     for cname in df.columns:
         table.add_column(cname, justify="left", no_wrap=False)
-    for _, row in samples:
+    for _, row in df.iterrows():
         field_str = [str(s) for s in row]
         table.add_row(*field_str)
     return table
