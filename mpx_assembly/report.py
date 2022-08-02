@@ -71,7 +71,7 @@ def quality_control_consensus(consensus_results: Path):
     }
 
     combined_files = {}
-    for assembly in (consensus_results / "consesnsus_assembly" / "consensus").glob("*.consensus.fasta"):
+    for assembly in (consensus_results / "consensus_assembly" / "consensus").glob("*.consensus.fasta"):
         name = assembly.name.replace(".consensus.fasta", "")
         
         combined_files[name] = SampleFiles(
