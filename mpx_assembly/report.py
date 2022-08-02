@@ -80,6 +80,8 @@ def quality_control_consensus(consensus_results: Path):
             samtools=coverage_data.get(name)
         )
 
+    print(combined_files)
+
     for sample, sample_files in combined_files.items():
         print(f"Processing quality control data for sample: {sample}")
 
