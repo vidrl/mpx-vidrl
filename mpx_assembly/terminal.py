@@ -1,6 +1,6 @@
 import typer 
 from pathlib import Path
-from mpx.report import quality_control_consensus
+from report import quality_control_consensus
 
 app = typer.Typer()
 
@@ -15,5 +15,3 @@ def report(
     Main report interface to generate the report file from one or multiple samples
     """
     quality_control_consensus(consensus_results=consensus_results)
-
-app()
