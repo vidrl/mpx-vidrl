@@ -9,6 +9,7 @@ import json
 from pyfastx import Fasta
 from rich.table import Table
 from rich import print as rprint
+import pandas
 
 @dataclass
 class SampleFiles:
@@ -76,7 +77,6 @@ def get_consensus_assembly_data(file: Path) -> (float or None, int):
         completeness = None
 
     return completeness, ncount
-
 
 
 def create_rich_table(samples: List[SampleQC], title: str):

@@ -10,7 +10,8 @@ setup(
     install_requires=[
         "typer",
         "pyfastx",
-        "rich"
+        "rich",
+        "pandas"
     ],
     entry_points="""
     [console_scripts]
