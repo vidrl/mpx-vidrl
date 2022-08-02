@@ -57,10 +57,10 @@ def get_consensus_assembly_data(file: Path) -> (float or None, int):
     seq = seq_data[0][1]
     ncount = seq.count("N")
     try:
-        completeness = 100 - ((ncount / len(seq))*100)
+        completeness = round(100 - ((ncount / len(seq))*100), 6)
     except ZeroDivisionError:
         completeness = None
-        
+
     return completeness, ncount
 
 
@@ -102,7 +102,7 @@ def quality_control_consensus(consensus_results: Path):
             coverage=coverage,
             mean_depth=mean_depth,
             missing_sites=missing,
-            completeness=round(completeness, 6)
+            completeness=completeness
         )
 
         print(qc)
