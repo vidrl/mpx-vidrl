@@ -224,8 +224,7 @@ def snp_distance(dist: Path):
         # Within patient distances
         within_patient = dist_lower.loc[patient, patient]
         print(within_patient)
-        print(within_patient.values)
-        if np.isnan(within_patient):
+        if not isinstance(within_patient, np.ndarray):
             pass
         else:
             distances = [v for v in within_patient.values.flatten() if not np.isnan(v)]
