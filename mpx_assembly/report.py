@@ -107,7 +107,10 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
         sorted_patient_samples = {}
         for patient_id, patient_data in patient_samples.items():
             sorted_patient_samples[patient_id] = sorted(patient_data, key=lambda x: x[1])
-        rprint(sorted_patient_samples)
+
+        patient_samples = dict(sorted(sorted_patient_samples.items()))
+
+        rprint(patient_samples)
 
     table = Table(title=title)
     for cname in df.columns:
