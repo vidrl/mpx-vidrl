@@ -109,12 +109,12 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
             sorted_patient_samples[patient_id] = sorted(patient_data, key=lambda x: x[1])
 
         sorted_samples = dict(sorted(sorted_patient_samples.items()))  # Python 3.7+
+        rprint(sorted_samples)
         df = pandas.DataFrame(
-            [data[2] for _, data in sorted_samples.items()],
+            [sample[2] for _, data in sorted_samples.items() for sample in data],
             columns=["Sample", "Reads", "QC Reads", "Alignments", "Coverage", "Mean Depth", "Missing", "Completeness"]
         )
         print(df)
-        rprint(sorted_samples)
 
     table = Table(title=title)
     for cname in df.columns:
