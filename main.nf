@@ -13,11 +13,6 @@ Monkeypox assembly workflow
 
 nextflow.enable.dsl=2
 
-// Change comment
-
-// Basic workflow using alignment against Monkeypox reference
-// and subsequent assembly of mapped reads
-
 include { check_file } from './modules/utils'
 
 include { Fastp } from './modules/fastp' addParams(
@@ -26,7 +21,8 @@ include { Fastp } from './modules/fastp' addParams(
 )
 include { MinimapAlignCigarPAF as MinimapReferenceAlignment } from './modules/minimap2' addParams(
     stage: "reference_assembly",
-    subdir: "alignments"
+    subdir: "alignments",
+    align_label: "minimap2"
 )
 include { ExtractAligned } from './modules/mgp_tools' addParams(
     stage: "reference_assembly",
@@ -55,7 +51,8 @@ workflow reference_assembly {
 
 include { MinimapAlignCigarPAF as MinimapHostAlignment } from './modules/minimap2' addParams(
     stage: "denovo_assembly",
-    subdir: "host_alignments"
+    subdir: "host_alignments",
+    align_label: "minimap2_host"
 )
 include { DepleteAligned } from './modules/mgp_tools' addParams(
     stage: "denovo_assembly",
@@ -68,14 +65,11 @@ include { Spades as DenovoAssembly } from './modules/spades' addParams(
     subdir: "assembly"
 )
 
-// Depletes human reads and assembles remainign reads
+// Depletes human reads and assembles remaining reads
 workflow denovo_assembly {
     take:
         reads
-        host_index
     main:
-        host_aligned_reads = MinimapHostAlignment(reads, host_index)
-        depleted_reads = DepleteAligned(host_aligned_reads[0], host_aligned_reads[1])
         assembly = DenovoAssembly(depleted_reads[0]) 
     emit:
         assembly[0]
@@ -115,20 +109,28 @@ workflow {
     // All subworkflows use quality controlled reads
     qc_reads = Fastp(reads)
 
+    if (params.host_depletion){
+        host_index = check_file(params.host_index)
+        host_aligned_reads = MinimapHostAlignment(qc_reads[0], host_index)
+        depleted_reads = DepleteAligned(host_aligned_reads[0], host_aligned_reads[1])
+        assembly_reads = depleted_reads[0]
+    } else {
+        assembly_reads = qc_reads[0]
+    }
+
     if (params.reference_assembly){
         // Reference alignment and assembly of aligned reads
         reference = check_file(params.reference)
-        reference_assembly(qc_reads[0], reference)
+        reference_assembly(assembly_reads, reference)
     } else if (params.consensus_assembly) {
         // Generate a consensus assembly against the current outbreak reference
         reference = check_file(params.reference)
-        consensus_assembly(qc_reads[0], reference)
+        consensus_assembly(assembly_reads, reference)
     } else if (params.denovo_assembly) {
         // Generate a denovo assembly
-        host_index = check_file(params.host_index)
-        denovo_assembly(qc_reads[0], host_index)
+        denovo_assembly(assembly_reads)
     } else {
-        error "\nRequired [set to `true`]: --reference_assembly | --consensus_assembly | --denovo_assembly"
+        error "\nRequired argument mising (--reference_assembly | --consensus_assembly | --denovo_assembly)  [set to `true`]"
     }
 }
 

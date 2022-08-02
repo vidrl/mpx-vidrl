@@ -1,7 +1,7 @@
 process MinimapAlignCigarPAF {
 
     tag { "$id : $idx_name" }
-    label "minimap2"
+    label "$params.align_label"
 
     publishDir "$params.outdir/$params.stage/$params.subdir", mode: "symlink", pattern: "${id}_${idx_name}.paf"
 
