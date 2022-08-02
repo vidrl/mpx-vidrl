@@ -60,7 +60,7 @@ def get_samtools_data(file: Path) -> (int, float, float):
     Get samtools coverage data
     """
     content = file.open().readlines()[1].strip().split("\t")
-    return int(content[3]), float(content[5]), float(content[6])  # numreads, coverage, meandepth
+    return int(content[3]), round(float(content[5]), 4), round(float(content[6]), 6)  # numreads, coverage, meandepth
 
 
 def get_consensus_assembly_data(file: Path) -> (float or None, int):
@@ -117,7 +117,11 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
 
     table = Table(title=title)
     for cname in df.columns:
-        table.add_column(cname, justify="left", no_wrap=False)
+        if cname != "Sample":
+            justify = "right"
+        else:
+            justidy = "left"
+        table.add_column(cname, justify=justify, no_wrap=False)
     for _, row in df.iterrows():
         if row["Completeness"] >= 99.9:
             row_color = "green3 dim"
