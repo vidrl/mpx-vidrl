@@ -81,7 +81,7 @@ def get_consensus_assembly_data(file: Path) -> (float or None, int):
 def create_rich_table(samples: List[SampleQC], title: str):
 
     table = Table(title=title)
-    for cname in ["Sammple", "Reads", "QC Reads", "Alignments", "Coverage", "Mean Depth", "Missing", "Completeness"]
+    for cname in ["Sammple", "Reads", "QC Reads", "Alignments", "Coverage", "Mean Depth", "Missing", "Completeness"]:
         table.add_column(cname, justify="left", no_wrap=False)
     for sample in samples:
         field_str = [str(s) for s in sample.to_list()]
