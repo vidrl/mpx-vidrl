@@ -79,14 +79,22 @@ def get_consensus_assembly_data(file: Path) -> (float or None, int):
     return completeness, ncount
 
 
-def create_rich_table(samples: List[SampleQC], title: str):
+def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = False):
 
     df = pandas.DataFrame(
         [sample.to_list() for sample in samples],
         columns=["Sample", "Reads", "QC Reads", "Alignments", "Coverage", "Mean Depth", "Missing", "Completeness"]
     )
 
-    df = df.sort_values(["Sample", "Completeness", "Coverage", "Mean Depth"])
+    if not patient_id:
+        df = df.sort_values(["Sample", "Completeness", "Coverage", "Mean Depth"])
+    else:
+        # Sort first by sample patient identifier then number of that patient sample
+        # must comply with Mona's format: ID_{Patient}_{Number} e.g. MPX_A_1 and MPX_A_2
+
+        print(df["Sample"], df["Sample"].index)
+        sample_sort = sorted(df["Sample"], key=lambda x: (x.split("_")[0], int(x.split("_")[2])))
+        print(sample_sort)
 
     print(df)
 
