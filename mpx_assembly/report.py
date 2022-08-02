@@ -207,7 +207,7 @@ def snp_distance(dist: Path):
             sample1_patient = sample1.split("_")[1]
 
             sample2 = content[1].split(".")[0].replace("Consensus_", "")
-            sample2_patient = sample1.split("_")[1]
+            sample2_patient = sample2.split("_")[1]
 
             dist = content[2]
 
