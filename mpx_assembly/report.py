@@ -245,6 +245,6 @@ def snp_distance(dist: Path):
             rprint(f"[red]{patient} <--> {other_patient}[/red]")
             # Ignore if all nan, the other combination will have the values:
 
-            nan_check = np.isnan(between_patients).values
+            nan_check = np.isnan(between_patients.values)
             print(nan_check)
 
