@@ -222,6 +222,7 @@ def snp_distance(dist: Path):
 
     patients_unique = sorted(list(set(patients)))
 
+    between_data = []
     for patient in patients_unique:
 
         # Within patient distances
@@ -246,16 +247,21 @@ def snp_distance(dist: Path):
             # Ignore if all nan, the other combination will have the values:
             if isinstance(between_patients, numpy.float64) and numpy.isnan(between_patients):
                 # Single isolate vs. single isolate where value is nan
-                continue
+                median_between = np.nan
             elif isinstance(between_patients, numpy.float64):
                 # Single isolate vs. single isolate where value is present
                 median_between = median([between_patients])
             else:
                 nan_check = np.isnan(between_patients.values).all()
                 if nan_check:
-                    print("All are NaN")
-                    continue
+                    median_between = np.nan
                 else:
                     median_between = median([v for v in between_patients.values.flatten()])
 
             rprint(f"Between patient median SNP distance: [yellow]{median_between}[/yellow]")
+            if not np.isnan(median_between):
+                # Sort the patient identifiers (sortable) to fill only single trriangle of matrix
+                combo = sorted([patient, other_patient]).append(median_between)
+                between_data.append(combo)
+
+    print(between_data)
