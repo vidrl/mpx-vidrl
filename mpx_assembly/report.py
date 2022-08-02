@@ -200,7 +200,7 @@ def snp_distance(dist: Path):
     dist_mat = pandas.read_csv(dist, index_col=0)
 
     print(dist_mat)
-    
+
     # Replace column and index names with extracted patient identifier
 
     patients = [c.split("_")[1] for c in dist_mat.columns]
@@ -212,8 +212,5 @@ def snp_distance(dist: Path):
 
     # Within patient distances
 
-
-
-    rprint(patient_distances)
 
 
