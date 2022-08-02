@@ -3,6 +3,8 @@ Monkeypox assembly report
 """
 
 import json
+import numpy
+
 import pandas
 from pathlib import Path
 from pyfastx import Fasta
@@ -225,6 +227,8 @@ def snp_distance(dist: Path):
         within_patient = dist_lower.loc[patient, patient]
         print(within_patient)
         print(type(within_patient))
-        distances = [v for v in within_patient.values.flatten() if not np.isnan(v)]
-        within_median = median(distances)
-        print(within_median)
+        if isinstance(within_patient, numpy.float64) and numpy.isnan(within_patient):
+            within_median = 0.
+        else:
+            distances = [v for v in within_patient.values.flatten() if not np.isnan(v)]
+            within_median = median(distances)
