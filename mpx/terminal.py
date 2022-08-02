@@ -1,7 +1,6 @@
 import typer 
 from pathlib import Path
-from .report import quality_control_consensus
-
+from mpx.report import quality_control_consensus
 
 app = typer.Typer()
 
@@ -17,3 +16,4 @@ def report(
     """
     quality_control_consensus(consensus_results=consensus_results)
 
+app()
