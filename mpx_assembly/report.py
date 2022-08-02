@@ -211,19 +211,17 @@ def snp_distance(dist: Path):
 
             dist = int(content[2])
 
-            if sample1 != sample2:  # ignore diagonal zeros, note that distance matrix is symmetrical
-
-                if sample1_patient == sample2_patient:  # within patient
-                    if sample1_patient not in patient_distances.keys():  # will have duplcated dists
-                        patient_distances[sample1_patient] = [dist]
-                    else:
-                        patient_distances[sample1_patient].append(dist)
+            if sample1_patient == sample2_patient:  # within patient
+                if sample1_patient not in patient_distances.keys():  # will have duplcated dists
+                    patient_distances[sample1_patient] = [dist]
                 else:
-                    comparison = f"{sample1_patient}-{sample2_patient}"
-                    if comparison not in patient_distances.keys():
-                        patient_distances[comparison] = [dist]
-                    else:
-                        patient_distances[comparison].append(dist)
+                    patient_distances[sample1_patient].append(dist)
+            else:
+                comparison = f"{sample1_patient}-{sample2_patient}"
+                if comparison not in patient_distances.keys():
+                    patient_distances[comparison] = [dist]
+                else:
+                    patient_distances[comparison].append(dist)
 
     rprint(patient_distances)
 
