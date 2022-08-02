@@ -203,7 +203,7 @@ def snp_distance(dist: Path):
 
     # Replace column and index names with extracted patient identifier
 
-    patients = [c.split(".")[0].replace("Consensus_") for c in dist_mat.columns]
+    patients = [c.split(".")[0].replace("Consensus_", "") for c in dist_mat.columns]
 
     dist_mat.index = patients
     dist_mat.columns = patients
