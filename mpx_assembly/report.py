@@ -48,7 +48,7 @@ def get_samtools_data(file: Path) -> (int, float, float):
     return int(content[3]), float(content[5]), float(content[6])  # numreads, coverage, meandepth
 
 
-def get_consensus_assembly_data(file: Path) -> (float, int):
+def get_consensus_assembly_data(file: Path) -> (float or None, int):
     """
     Get consensus sequence and missing site proportion (N) - should only have a single sequence
     """
@@ -56,7 +56,11 @@ def get_consensus_assembly_data(file: Path) -> (float, int):
     seq_data = [seq for seq in Fasta(str(file), uppercase=True, build_index=False)]
     seq = seq_data[0][1]
     ncount = seq.count("N")
-    completeness = 100 - ((ncount / len(seq))*100)
+    try:
+        completeness = 100 - ((ncount / len(seq))*100)
+    except ZeroDivisionError:
+        completeness = None
+        
     return completeness, ncount
 
 
@@ -98,7 +102,7 @@ def quality_control_consensus(consensus_results: Path):
             coverage=coverage,
             mean_depth=mean_depth,
             missing_sites=missing,
-            completeness=completeness
+            completeness=round(completeness, 6)
         )
 
         print(qc)
