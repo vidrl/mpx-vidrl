@@ -14,6 +14,8 @@ from dataclasses import dataclass
 from typing import Optional, List
 import numpy as np
 from statistics import median, mean
+import seaborn as sns
+from matplotlib import pyplot as plt
 
 
 @dataclass
@@ -285,5 +287,26 @@ def snp_distance(dist: Path):
 
     print(f"Median total within: {median(all_within)}")
     print(f"Mean total within: {mean(all_within)}")
+
     print(f"Median total between: {median(all_between)}")
     print(f"Mean total between: {mean(all_between)}")
+
+    boxplot_data = pandas.DataFrame(
+        {
+            "comparison": ["between" for _ in all_between] + ["within" for _ in all_within],
+            "distance": all_between + all_within
+        }
+    )
+
+    fig, ax = plt.subplots(
+        nrows=1, ncols=1, figsize=(14, 10)
+    )
+
+    sns.boxplot(x="comparison", y="distance", data=boxplot_data, palette="Set3", linewidth=2.5, axes=ax)
+
+    plt.xlabel(f"")
+    plt.ylabel(f"Median SNP Distance")
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.tight_layout()
+    fig.savefig("test.png")

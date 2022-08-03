@@ -12,7 +12,9 @@ setup(
         "pyfastx",
         "rich",
         "pandas",
-        "numpy"
+        "numpy",
+        "seaborn",
+        "matplotlib"
     ],
     entry_points="""
     [console_scripts]
