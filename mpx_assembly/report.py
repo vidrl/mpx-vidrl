@@ -302,7 +302,7 @@ def snp_distance(dist: Path):
         nrows=1, ncols=1, figsize=(14, 10)
     )
 
-    sns.boxplot(x="comparison", y="distance", data=boxplot_data, palette="Set3", linewidth=2.5, axes=ax)
+    sns.boxplot(x="comparison", y="distance", data=boxplot_data, palette="Set3", linewidth=2.5, ax=ax)
 
     plt.xlabel(f"")
     plt.ylabel(f"Median SNP Distance")
