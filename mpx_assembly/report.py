@@ -59,7 +59,7 @@ def get_fastp_data(file: Path) -> (int, int):
     all_reads = fastp_data["summary"]["before_filtering"]["total_reads"]
     qc_reads = fastp_data["summary"]["after_filtering"]["total_reads"]
 
-    return all_reads // 2, qc_reads // 2  # Illumina PE
+    return all_reads, qc_reads  # Illumina PE
 
 
 def get_samtools_data(file: Path) -> (int, float, float):
@@ -198,6 +198,7 @@ def quality_control_consensus(consensus_results: Path):
 
     table = create_rich_table(samples, title="Monkeypox QC")
     rprint(table)
+
 
 
 @dataclass
