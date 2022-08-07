@@ -140,15 +140,18 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
     for _, row in df.iterrows():
         if row["Completeness"] >= 99.9:
             row_color = "#66bd63"
-        elif 99.0 <= row["Completeness"] < 99.9:
+        elif 95.0 <= row["Completeness"] < 99.9:
             row_color = "#ffffbf"
-        elif 95.0 <= row["Completeness"] < 99.0:
+        elif 90.0 <= row["Completeness"] < 95.0:
             row_color = "#fdae61"
         else:
             row_color = "#d73027"
 
         field_str = [f"[{row_color}]{s}" for s in row]
         table.add_row(*field_str)
+
+    df.to_csv("qc_table.tsv", sep="\t", header=True, index=False)
+
     return table
 
 
