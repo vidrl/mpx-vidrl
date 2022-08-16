@@ -22,5 +22,5 @@ setup(
     """,
     version="0.1.0",
     license="MIT",
-    description="Monkeypox assembly and all that other stuff",
+    description="Monkeypox assembly and all kinds of stuff",
 )

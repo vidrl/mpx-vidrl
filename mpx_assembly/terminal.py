@@ -12,12 +12,18 @@ app.add_typer(report, name="report")
 def consensus(
     results: Path = typer.Argument(
         ..., help="Output path of the Nextflow pipeline for consensus genome assembly"
+    ),
+    output: Path = typer.Option(
+        "qc_table.tsv", help="QC table output file"
+    ),
+    subdir: Path = typer.Option(
+        "high_freq", help="Consensus sub directory: low_freq | high_freq"
     )
 ):
     """
     QC
     """
-    quality_control_consensus(consensus_results=results)
+    quality_control_consensus(consensus_results=results, consensus_subdir=subdir, table_output=output)
 
 
 @report.command()

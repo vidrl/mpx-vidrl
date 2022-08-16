@@ -31,15 +31,15 @@ include { MinimapAlignSortedBam } from './modules/minimap2' addParams(
     stage: "alignments",
     subdir: ""
 )
-include { IvarConsensusBetween } from './modules/ivar' addParams(
+include { IvarConsensusHighFrequency }  from './modules/ivar' addParams(
     stage: "consensus",
-    subdir: "between",
-    ivar_consensus_min_freq: params.ivar_consensus_min_freq_between
+    subdir: "high_freq",
+    ivar_consensus_min_freq: params.ivar_consensus_min_freq_high
 )
-include { IvarConsensusWithin } from './modules/ivar' addParams(
+include { IvarConsensusLowFrequency } from './modules/ivar' addParams(
     stage: "consensus",
-    subdir: "within",
-    ivar_consensus_min_freq: params.ivar_consensus_min_freq_within
+    subdir: "low_freq",
+    ivar_consensus_min_freq: params.ivar_consensus_min_freq_low
 )
 include { Coverage } from './modules/coverage' addParams(
     stage: "coverage",
@@ -67,8 +67,8 @@ workflow qc_consensus_assembly {
         qc_reads = Fastp(reads)
         aligned_reads = MinimapAlignSortedBam(qc_reads, reference)
         coverage = Coverage(aligned_reads)
-        consensus_assembly_between = IvarConsensusBetween(aligned_reads, reference)
-        consensus_assembly_within = IvarConsensusWithin(aligned_reads, reference)
+        consensus_assembly_high = IvarConsensusHighFrequency(aligned_reads, reference)
+        consensus_assembly_low = IvarConsensusLowFrequency(aligned_reads, reference)
     emit:
         consensus_assembly
         coverage

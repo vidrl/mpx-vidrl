@@ -87,7 +87,7 @@ def get_consensus_assembly_data(file: Path) -> Tuple[float or None, int]:
     return completeness, ncount
 
 
-def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = True):
+def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = True, table_output: Path = None):
 
     df = pandas.DataFrame(
         [sample.to_list() for sample in samples],
@@ -151,12 +151,13 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
         field_str = [f"[{row_color}]{s}" for s in row]
         table.add_row(*field_str)
 
-    df.to_csv("qc_table.tsv", sep="\t", header=True, index=False)
+    if table_output is not None:
+        df.to_csv(table_output, sep="\t", header=True, index=False)
 
     return table
 
 
-def quality_control_consensus(consensus_results: Path):
+def quality_control_consensus(consensus_results: Path, consensus_subdir: str = "high_freq", table_output: Path = None):
 
     """ Create a quality control table from the coverage data and consensus sequences """
 
@@ -197,7 +198,9 @@ def quality_control_consensus(consensus_results: Path):
         )
         samples.append(qc)
 
-    table = create_rich_table(samples, title="Monkeypox QC")
+    table_freq_title = "".join([s.capitalize() for s in consensus_subdir.split("_")])
+    table = create_rich_table(samples, title=f"Monkeypox QC ({table_freq_title})", table_output=table_output)
+
     rprint(table)
 
 
