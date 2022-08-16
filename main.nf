@@ -70,7 +70,8 @@ workflow qc_consensus_assembly {
         consensus_assembly_high = IvarConsensusHighFrequency(aligned_reads, reference)
         consensus_assembly_low = IvarConsensusLowFrequency(aligned_reads, reference)
     emit:
-        consensus_assembly
+        consensus_assembly_high
+        consensus_assembly_low
         coverage
 }
 
