@@ -142,13 +142,13 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
 
     for _, row in df.iterrows():
         if row["Completeness"] >= 99.9:
-            row_color = "#66bd63"
+            row_color = "green1"
         elif 95.0 <= row["Completeness"] < 99.9:
-            row_color = "#ffffbf"
+            row_color = "pale_green1"
         elif 90.0 <= row["Completeness"] < 95.0:
-            row_color = "#fdae61"
+            row_color = "yellow1"
         else:
-            row_color = "red"
+            row_color = "red1"
 
         field_str = [f"[{row_color}]{s}" for s in row]
         table.add_row(*field_str)
