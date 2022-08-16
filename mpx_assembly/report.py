@@ -163,8 +163,8 @@ def quality_control_consensus(consensus_results: Path, consensus_subdir: str = "
     """ Create a quality control table from the coverage data and consensus sequences """
 
     coverage_data = {
-        sample.name.replace(".txt", ""): sample
-        for sample in (consensus_results / "coverage").glob("*.txt")
+        sample.name.replace(".coverage.txt", ""): sample
+        for sample in (consensus_results / "coverage").glob("*.coverage.txt")
     }
     fastp_data = {
         sample.name.replace(".json", ""): sample
