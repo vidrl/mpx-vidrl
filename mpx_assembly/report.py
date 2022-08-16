@@ -4,6 +4,7 @@ Monkeypox assembly report
 
 from cmath import nan
 import json
+from multiprocessing.sharedctypes import Value
 import numpy
 
 import pandas
@@ -171,7 +172,8 @@ def quality_control_consensus(consensus_results: Path, consensus_subdir: str = "
     }
 
     combined_files = {}
-    for assembly in (consensus_results / "consensus").glob("*.consensus.fasta"):
+    consensus_assemblies = consensus_results / "consensus" / consensus_subdir
+    for assembly in consensus_assemblies.glob("*.consensus.fasta"):
         name = assembly.name.replace(".consensus.fasta", "")
         
         combined_files[name] = SampleFiles(
@@ -179,6 +181,9 @@ def quality_control_consensus(consensus_results: Path, consensus_subdir: str = "
             fastp=fastp_data.get(name),
             samtools=coverage_data.get(name)
         )
+
+    if not combined_files:
+        raise ValueError(f"No consensus sequences found in: {consensus_assemblies}")
 
     samples = []
     for sample, sample_files in combined_files.items():
