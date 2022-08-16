@@ -65,7 +65,7 @@ workflow qc_consensus_assembly {
         reference
     main:
         qc_reads = Fastp(reads)
-        aligned_reads = MinimapAlignSortedBam(qc_reads, reference)
+        aligned_reads = MinimapAlignSortedBam(qc_reads[0], reference)
         coverage = Coverage(aligned_reads)
         consensus_assembly_high = IvarConsensusHighFrequency(aligned_reads, reference)
         consensus_assembly_low = IvarConsensusLowFrequency(aligned_reads, reference)

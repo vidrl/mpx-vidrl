@@ -17,7 +17,7 @@ process MinimapAlignSortedBam {
     idx_name = index.baseName
 
     """
-    minimap2 -t $task.cpus -ax sr ${index} $forward $reverse > ${id}_${idx_name}.sam
+    minimap2 -t $task.cpus -ax sr ${index} $forward $reverse --sam-hit-only > ${id}_${idx_name}.sam
     samtools view -S ${id}_${idx_name}.sam -b | samtools sort - -o ${id}_${idx_name}.sorted.bam
     rm ${id}_${idx_name}.sam
     """
