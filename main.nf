@@ -31,12 +31,12 @@ include { MinimapAlignSortedBam } from './modules/minimap2' addParams(
     stage: "alignments",
     subdir: ""
 )
-include { IvarConsensusHighFrequency }  from './modules/ivar' addParams(
+include { IvarConsensus as IvarConsensusHighFrequency }  from './modules/ivar' addParams(
     stage: "consensus",
     subdir: "high_freq",
     ivar_consensus_min_freq: params.ivar_consensus_min_freq_high
 )
-include { IvarConsensusLowFrequency } from './modules/ivar' addParams(
+include { IvarConsensus as IvarConsensusLowFrequency } from './modules/ivar' addParams(
     stage: "consensus",
     subdir: "low_freq",
     ivar_consensus_min_freq: params.ivar_consensus_min_freq_low
