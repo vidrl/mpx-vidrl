@@ -1,0 +1,8 @@
+name: coverage
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - samtools=1.15.1
+  - covtobed=1.3.5

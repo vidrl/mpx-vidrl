@@ -5,9 +5,17 @@
 vim: syntax=groovy
 -*- mode: groovy;-*-
 
-Monkeypox assembly workflow
+Monkeypox workflow fir Illumina PE from enriched sequencing:
+    
+    - Quality control
+    - Host depletion [optional]
+    - Consensus sequences: 3% and 75%
+    - Multiple sequence alignment (MSA)
+    - Phylogeny
+    - Report: QC, SNP distances, Variants, Phylogeny
 
 @authors: Eike Steinig, Mona Taouk
+@date: August 2022
 
 */
 
@@ -19,118 +27,58 @@ include { Fastp } from './modules/fastp' addParams(
     stage: "quality_control",
     subdir: ""
 )
-include { MinimapAlignCigarPAF as MinimapReferenceAlignment } from './modules/minimap2' addParams(
-    stage: "reference_assembly",
-    subdir: "alignments",
-    align_label: "minimap2"
-)
-include { ExtractAligned } from './modules/mgp_tools' addParams(
-    stage: "reference_assembly",
-    subdir: "extractions",
-    extract_min_len: params.extract_min_qaln_len,
-    extract_min_mapq: params.extract_min_mapq
-)
-include { Spades as ReferenceAssembly } from './modules/spades' addParams(
-    stage: "reference_assembly",
-    subdir: "assembly"
-)
-
-// Aligns reads to outbreak reference and assembles aligned reads
-workflow reference_assembly {
-    take:
-        reads
-        reference
-    main:
-        aligned_reads = MinimapReferenceAlignment(reads, reference)
-        extracted_reads = ExtractAligned(aligned_reads[0], aligned_reads[1])
-        assembly = ReferenceAssembly(extracted_reads[0])
-    emit:
-        assembly[0]
-        assembly[1]
-}
-
-include { MinimapAlignCigarPAF as MinimapHostAlignment } from './modules/minimap2' addParams(
-    stage: "denovo_assembly",
-    subdir: "host_alignments",
-    align_label: "minimap2_host"
-)
-include { DepleteAligned } from './modules/mgp_tools' addParams(
-    stage: "denovo_assembly",
-    subdir: "host_depletion",
-    extract_min_len: params.host_deplete_min_qaln_len,
-    extract_min_mapq: params.host_deplete_min_mapq
-)
-include { Spades as DenovoAssembly } from './modules/spades' addParams(
-    stage: "denovo_assembly",
-    subdir: "assembly"
-)
-
-// Depletes human reads and assembles remaining reads
-workflow denovo_assembly {
-    take:
-        reads
-    main:
-        assembly = DenovoAssembly(depleted_reads[0]) 
-    emit:
-        assembly[0]
-        assembly[1]
-}
-
 include { MinimapAlignSortedBam } from './modules/minimap2' addParams(
-    stage: "consensus_assembly",
-    subdir: "alignments"
+    stage: "alignments",
+    subdir: ""
 )
-include { IvarConsensus } from './modules/ivar' addParams(
-    stage: "consensus_assembly",
-    subdir: "consensus"
+include { IvarConsensusBetween } from './modules/ivar' addParams(
+    stage: "consensus",
+    subdir: "between",
+    ivar_consensus_min_freq: params.ivar_consensus_min_freq_between
 )
-include { SamtoolsCoverage } from './modules/samtools' addParams(
-    stage: "consensus_assembly",
-    subdir: "coverage"
+include { IvarConsensusWithin } from './modules/ivar' addParams(
+    stage: "consensus",
+    subdir: "within",
+    ivar_consensus_min_freq: params.ivar_consensus_min_freq_within
+)
+include { Coverage } from './modules/coverage' addParams(
+    stage: "coverage",
+    subdir: ""
 )
 
-workflow consensus_assembly {
+workflow host_depletion {
+    take: 
+        qc_reads
+    main:
+        host_index = check_file(params.host_index)
+        host_aligned_reads = MinimapHostAlignment(qc_reads[0], host_index)
+        // depleted_reads = DepleteAligned(host_aligned_reads[0], host_aligned_reads[1])
+    emit:
+        depleted_reads[0]
+    
+}
+
+// Read quality control, consensus assembly, coverage data
+workflow qc_consensus_assembly {
     take:
         reads
         reference
     main:
-        aligned_reads = MinimapAlignSortedBam(reads, reference)
-        consensus_assembly = IvarConsensus(aligned_reads, reference)
-        coverage = SamtoolsCoverage(aligned_reads)
-
+        qc_reads = Fastp(reads)
+        aligned_reads = MinimapAlignSortedBam(qc_reads, reference)
+        coverage = Coverage(aligned_reads)
+        consensus_assembly_between = IvarConsensusBetween(aligned_reads, reference)
+        consensus_assembly_within = IvarConsensusWithin(aligned_reads, reference)
     emit:
         consensus_assembly
+        coverage
 }
 
 workflow {
 
     reads = channel.fromFilePairs(params.fastq, flat: true)
-    
-    // All subworkflows use quality controlled reads
-    qc_reads = Fastp(reads)
+    reference = check_file(params.reference)
+    qc_consensus_assembly(reads, reference)
 
-    if (params.host_depletion){
-        host_index = check_file(params.host_index)
-        host_aligned_reads = MinimapHostAlignment(qc_reads[0], host_index)
-        depleted_reads = DepleteAligned(host_aligned_reads[0], host_aligned_reads[1])
-        assembly_reads = depleted_reads[0]
-    } else {
-        assembly_reads = qc_reads[0]
-    }
-
-    if (params.reference_assembly){
-        // Reference alignment and assembly of aligned reads
-        reference = check_file(params.reference)
-        reference_assembly(assembly_reads, reference)
-    } else if (params.consensus_assembly) {
-        // Generate a consensus assembly against the current outbreak reference
-        reference = check_file(params.reference)
-        consensus_assembly(assembly_reads, reference)
-    } else if (params.denovo_assembly) {
-        // Generate a denovo assembly
-        denovo_assembly(assembly_reads)
-    } else {
-        error "\nRequired argument mising (--reference_assembly | --consensus_assembly | --denovo_assembly)  [set to `true`]"
-    }
 }
 

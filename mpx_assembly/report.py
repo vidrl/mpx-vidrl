@@ -2,6 +2,7 @@
 Monkeypox assembly report
 """
 
+from cmath import nan
 import json
 import numpy
 
@@ -11,7 +12,7 @@ from pyfastx import Fasta
 from rich.table import Table
 from rich import print as rprint
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import Optional, List, Tuple
 import numpy as np
 from statistics import median, mean
 import seaborn as sns
@@ -49,7 +50,7 @@ class SampleQC:
         ]
 
 
-def get_fastp_data(file: Path) -> (int, int):
+def get_fastp_data(file: Path) -> Tuple[int, int]:
     """
     Get fastp data - divive by two for paired-end reads
     """
@@ -59,10 +60,10 @@ def get_fastp_data(file: Path) -> (int, int):
     all_reads = fastp_data["summary"]["before_filtering"]["total_reads"]
     qc_reads = fastp_data["summary"]["after_filtering"]["total_reads"]
 
-    return all_reads // 2, qc_reads // 2  # Illumina PE
+    return all_reads, qc_reads  # Illumina PE
 
 
-def get_samtools_data(file: Path) -> (int, float, float):
+def get_samtools_data(file: Path) -> Tuple[int, float, float]:
     """
     Get samtools coverage data
     """
@@ -70,7 +71,7 @@ def get_samtools_data(file: Path) -> (int, float, float):
     return int(content[3]), round(float(content[5]), 4), round(float(content[6]), 6)  # numreads, coverage, meandepth
 
 
-def get_consensus_assembly_data(file: Path) -> (float or None, int):
+def get_consensus_assembly_data(file: Path) -> Tuple[float or None, int]:
     """
     Get consensus sequence and missing site proportion (N) - should only have a single sequence
     """
@@ -115,7 +116,7 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
             sorted_patient_samples[patient_id] = sorted(patient_data, key=lambda x: x[0])
 
         sorted_samples = dict(sorted(sorted_patient_samples.items()))  # Python 3.7+
-        rprint(sorted_samples)
+
         df = pandas.DataFrame(
             [sample[1] for _, data in sorted_samples.items() for sample in data],
             columns=[
@@ -166,7 +167,7 @@ def quality_control_consensus(consensus_results: Path):
     }
 
     combined_files = {}
-    for assembly in (consensus_results / "consensus_assembly" / "consensus").glob("*.consensus.fasta"):
+    for assembly in (consensus_results / "consensus").glob("*.consensus.fasta"):
         name = assembly.name.replace(".consensus.fasta", "")
         
         combined_files[name] = SampleFiles(
@@ -207,7 +208,7 @@ class SampleDistance:
 def snp_distance(dist: Path):
     """
     Compute median SNP distance within and between patients
-    SAmple identifiers conform to Mona's scheme: MPX_A_1 etc.
+    Sample identifiers conform to Mona's scheme: MPX_A_1 etc.
     """
 
     dist_mat = pandas.read_csv(dist, index_col=0)
@@ -219,95 +220,34 @@ def snp_distance(dist: Path):
     dist_mat.index = patients
     dist_mat.columns = patients
 
-    dist_lower = dist_mat.mask(np.triu(np.ones(dist_mat.shape, dtype=np.bool_)))
+    dist_upper = dist_mat.mask(np.triu(np.ones(dist_mat.shape, dtype=np.bool_)))
 
-    rprint(dist_lower)
+    melted = pandas.DataFrame(dist_upper).reset_index().melt('index')
 
-    patients_unique = sorted(list(set(patients)))
+    within_patients = melted[melted['index'] == melted['variable']].dropna()
+    between_patients = melted[melted['index'] != melted['variable']].dropna()
 
-    between_data = []
-    within_data = []
-    for patient in patients_unique:
+    # Within patient with only single isolate comparison to itself is already NaN and excluded
 
-        # Within patient distances
-        within_patient = dist_lower.loc[patient, patient]
-        if isinstance(within_patient, numpy.float64) and numpy.isnan(within_patient):
-            within_median = np.nan
-        else:
-            distances = [v for v in within_patient.values.flatten() if not np.isnan(v)]
-            within_median = median(distances)
-
-        within_data.append([patient, patient, within_median])
-
-        # rprint(
-        #     f"Within patient [red]{patient}[/red] (n = {patients.count(patient)}) "
-        #     f"median SNP distance: [yellow]{within_median}[/yellow]"
-        # )
-
-        # Between patient distances
-        other_patients = [p for p in patients_unique if p != patient]
-
-        for other_patient in other_patients:
-            between_patients = dist_lower.loc[patient, other_patient]
-            # rprint(f"[red]{patient} <--> {other_patient}[/red]")
-            # Ignore if all nan, the other combination will have the values:
-            if isinstance(between_patients, numpy.float64) and numpy.isnan(between_patients):
-                # Single isolate vs. single isolate where value is nan
-                median_between = np.nan
-            elif isinstance(between_patients, numpy.float64):
-                # Single isolate vs. single isolate where value is present
-                median_between = median([between_patients])
-            else:
-                nan_check = np.isnan(between_patients.values).all()
-                if nan_check:
-                    median_between = np.nan
-                else:
-                    median_between = median([v for v in between_patients.values.flatten()])
-
-            # rprint(f"Between patient median SNP distance: [yellow]{median_between}[/yellow]")
-            if not np.isnan(median_between):
-                # Sort the patient identifiers (sortable) to fill only single trriangle of matrix
-                combo = sorted([patient, other_patient]) + [median_between]
-                between_data.append(combo)
-
-    long_form_upper = sorted(between_data, key=lambda x: x[0])
-    df = pandas.DataFrame(np.nan, index=patients_unique, columns=patients_unique)
-
-    # Fill in upper triangle with between patient distances
-    for data in long_form_upper:
-        df.loc[data[0], data[1]] = data[2]
-
-    # Fill in diagonal with within patient distances
-    for data in within_data:
-        df.loc[data[0], data[1]] = data[2]
-
-    rprint(df)
-    all_between = [d[2] for d in between_data]
-    all_within = [d[2] for d in within_data if not np.isnan(d[2])]
-
-    print(f"Median total within: {median(all_within)}")
-    print(f"Mean total within: {mean(all_within)}")
-
-    print(f"Median total between: {median(all_between)}")
-    print(f"Mean total between: {mean(all_between)}")
-
-    boxplot_data = pandas.DataFrame(
-        {
-            "comparison": ["between" for _ in all_between] + ["within" for _ in all_within],
-            "distance": all_between + all_within
-        }
-    )
+    df = pandas.concat([within_patients, between_patients])
+    df['comparison'] = ['within' for _ in within_patients.iterrows()] + ['between' for _ in between_patients.iterrows()]\
+    
+    df.columns = ['patient1', 'patient2', 'distance', 'comparison']
 
     fig, ax = plt.subplots(
         nrows=1, ncols=1, figsize=(14, 10)
     )
-
-    sns.boxplot(x="comparison", y="distance", data=boxplot_data, palette="Set3", linewidth=2.5, ax=ax)
-    sns.swarmplot(x="comparison", y="distance", data=boxplot_data, color=".25")
     
-    plt.xlabel(f"")
-    plt.ylabel(f"Median SNP Distance")
-    plt.xticks(fontsize=12)
-    plt.yticks(fontsize=12)
+    sns.set_style('white')
+
+    p = sns.boxplot(x="distance", y="comparison", data=df, palette="colorblind", linewidth=2.5, ax=ax)
+    sns.stripplot(x="distance", y="comparison", data=df, color="darkgray", alpha=0.8, jitter=0.3, size=8, ax=ax)
+ 
+
+    p.set_xticks(range(int(df['distance'].max())+1))
+    p.set_xticklabels(range(int(df['distance'].max())+1))
+    plt.xlabel(f"\nSNP distance", fontsize=12, fontweight="bold")
+    plt.ylabel(f"Patient isolates\n", fontsize=12, fontweight="bold")
     plt.tight_layout()
+    
     fig.savefig("test.png")
