@@ -198,7 +198,7 @@ def quality_control_consensus(consensus_results: Path, consensus_subdir: str = "
         )
         samples.append(qc)
 
-    table_freq_title = "".join([s.capitalize() for s in consensus_subdir.split("_")])
+    table_freq_title = "".join([s.capitalize() for s in consensus_subdir.name.split("_")])
     table = create_rich_table(samples, title=f"Monkeypox QC ({table_freq_title})", table_output=table_output)
 
     rprint(table)
