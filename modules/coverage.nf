@@ -9,7 +9,7 @@ process Coverage {
     tuple val(id), val(idx_name), file(bam)
 
     output:
-    tuple val(id), val("${id}.coverage.txt"), val("${id}.coverage.bed")
+    tuple val(id), file("${id}.coverage.txt"), file("${id}.coverage.bed")
 
     script:
 
