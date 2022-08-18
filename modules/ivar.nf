@@ -16,8 +16,6 @@ process IvarConsensus {
 
     script:
 
-    // No `-k` parameter used - add fill character (N) for bases with less than `params.ivar_consensus_min_depth`
-
     """
     samtools mpileup $params.samtools_mpileup_args -d $params.samtools_mpileup_max_depth -A -Q 0 $bam | ivar consensus -p ${id}.consensus \
         -q $params.ivar_consensus_min_qual \

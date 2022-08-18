@@ -58,17 +58,18 @@ workflow host_depletion {
     
 }
 
-// Read quality control, consensus assembly, coverage data
+// Read quality control, coverage data, consensus assembly, variant calls
 workflow qc_consensus_assembly {
     take:
         reads
         reference
+        gff
     main:
         qc_reads = Fastp(reads)
         aligned_reads = MinimapAlignSortedBam(qc_reads[0], reference)
         coverage = Coverage(aligned_reads)
-        consensus_assembly_high = IvarConsensusHighFrequency(aligned_reads, reference)
-        consensus_assembly_low = IvarConsensusLowFrequency(aligned_reads, reference)
+        consensus_assembly_high = IvarConsensusHighFrequency(aligned_reads, reference, gff)
+        consensus_assembly_low = IvarConsensusLowFrequency(aligned_reads, reference, gff)
     emit:
         consensus_assembly_high
         consensus_assembly_low
@@ -79,7 +80,8 @@ workflow {
 
     reads = channel.fromFilePairs(params.fastq, flat: true)
     reference = check_file(params.reference)
-    qc_consensus_assembly(reads, reference)
+    gff = check_file(params.gff)
+    qc_consensus_assembly(reads, reference, gff)
 
 }
 
