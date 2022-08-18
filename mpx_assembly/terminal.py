@@ -23,7 +23,7 @@ def consensus(
     """
     QC
     """
-    quality_control_consensus(consensus_results=results, consensus_subdir=subdir, table_output=output)
+    quality_control_consensus(results=results, consensus_subdir=subdir, table_output=output)
 
 
 @report.command()

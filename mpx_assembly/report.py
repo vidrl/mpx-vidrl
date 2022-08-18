@@ -159,28 +159,29 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
     return table
 
 
-def quality_control_consensus(consensus_results: Path, consensus_subdir: str = "high_freq", table_output: Path = None):
+def quality_control_consensus(results: Path, subdir: str = "high_freq", table_output: Path = None) -> Tuple[pandas.DataFrame, Table]:
 
     """ Create a quality control table from the coverage data and consensus sequences """
 
     coverage_data = {
         sample.name.replace(".coverage.txt", ""): sample
-        for sample in (consensus_results / "coverage").glob("*.coverage.txt")
+        for sample in (results / "coverage").glob("*.coverage.txt")
     }
     fastp_data = {
         sample.name.replace(".json", ""): sample
-        for sample in (consensus_results / "quality_control").glob("*.json")
+        for sample in (results / "quality_control").glob("*.json")
     }
 
     combined_files = {}
-    consensus_assemblies = consensus_results / "consensus" / consensus_subdir
+    consensus_assemblies = results / "consensus" / subdir
     for assembly in consensus_assemblies.glob("*.consensus.fasta"):
         name = assembly.name.replace(".consensus.fasta", "")
         
         combined_files[name] = SampleFiles(
             assembly=assembly,
             fastp=fastp_data.get(name),
-            samtools=coverage_data.get(name)
+            samtools=coverage_data.get(name),
+
         )
 
     if not combined_files:
@@ -204,11 +205,17 @@ def quality_control_consensus(consensus_results: Path, consensus_subdir: str = "
         )
         samples.append(qc)
 
-    table_freq_title = "".join([s.capitalize() for s in consensus_subdir.name.split("_")])
+    table_freq_title = "".join([s.capitalize() for s in subdir.name.split("_")])
     table = create_rich_table(samples, title=f"Monkeypox QC ({table_freq_title})", table_output=table_output)
 
     rprint(table)
 
+    df = pandas.DataFrame(
+        [sample.to_list() for sample in samples],
+        columns=["Sample", "Reads", "QC Reads", "Alignments", "Coverage", "Mean Depth", "Missing", "Completeness"]
+    )
+
+    return df, table
 
 
 @dataclass
@@ -264,3 +271,27 @@ def snp_distance(dist: Path):
     plt.tight_layout()
     
     fig.savefig("test.png")
+
+
+def variant_table(results: Path, subdir: str, min_complete: float = 95.0, min_depth: float = 50):
+
+    consensus_directory = results / "consensus" / subdir
+
+    variant_dfs = []
+    for file in consensus_directory.glob("*.variants.tsv"):
+        df = pandas.read_csv(file, sep="\t", header=0)
+        if df.empty:
+            df.iloc[0] = [None for _ in df.columns]
+        sample_name = file.name.replace(".variants.tsv", "")
+        df['SAMPLE'] = [sample_name for _ in df.iterrows()]
+        variant_dfs.append(df)
+    
+    variant_df = pandas.concat(variant_dfs)
+    qc_df, _ = quality_control_consensus(results=results, subdir=subdir)
+
+    qc_df_pass = qc_df[qc_df["completeness"] >= min_complete & qc_df["min_depth"] >= min_depth]
+
+    variant_df_pass = variant_df[variant_df["SAMPLE"].isin(qc_df_pass.sample)]
+    
+
+    
