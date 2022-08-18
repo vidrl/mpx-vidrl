@@ -12,7 +12,7 @@ process IvarConsensus {
     file(gff)
 
     output:
-    tuple val(id), file("${id}.consensus.fasta")
+    tuple val(id), file("${id}.consensus.fasta"), file("${id}.variants.fasta")
 
     script:
 
@@ -29,7 +29,7 @@ process IvarConsensus {
         -q $params.ivar_consensus_min_qual \
         -t $params.ivar_consensus_min_freq \
         -m $params.ivar_consensus_min_depth \
-        -r $reference
+        -r $reference \
         -g $gff
 
     mv ${id}.consensus.fa ${id}.consensus.fasta
