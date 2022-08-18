@@ -12,7 +12,7 @@ process IvarConsensus {
     file(gff)
 
     output:
-    tuple val(id), file("${id}.consensus.fasta"), file("${id}.variants.fasta")
+    tuple val(id), file("${id}.consensus.fasta"), file("${id}.variants.tsv")
 
     script:
 
