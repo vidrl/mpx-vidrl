@@ -16,7 +16,7 @@ def quality_control(
     output: Path = typer.Option(
         "qc_table.tsv", help="QC table output file"
     ),
-    subdir: Path = typer.Option(
+    subdir: str = typer.Option(
         "high_freq", help="Consensus sub directory: low_freq | high_freq"
     )
 ):
@@ -46,13 +46,16 @@ def variants(
         output: Path = typer.Option(
             "qc_table.tsv", help="QC table output file"
         ),
-        subdir: Path = typer.Option(
+        subdir: str = typer.Option(
             "high_freq", help="Consensus sub directory: low_freq | high_freq"
+        ),
+        genbank: Path = typer.Option(
+            None, help="Genbank file of reference to use for additional variant annotations"
         )
 ):
     """
     Variant call summary
     """
 
-    variant_table(results=results, subdir=subdir, min_complete=0.95, min_depth=50)
+    variant_table(results=results, subdir=subdir, min_complete=0.95, min_depth=50, genbank_file=genbank)
 

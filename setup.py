@@ -14,7 +14,8 @@ setup(
         "pandas",
         "numpy",
         "seaborn",
-        "matplotlib"
+        "matplotlib",
+        "biopython"
     ],
     entry_points="""
     [console_scripts]

@@ -18,6 +18,8 @@ import numpy as np
 from statistics import median, mean
 import seaborn as sns
 from matplotlib import pyplot as plt
+from Bio import GenBank
+from Bio.Seq import Seq
 
 
 @dataclass
@@ -205,7 +207,7 @@ def quality_control_consensus(results: Path, subdir: str = "high_freq", table_ou
         )
         samples.append(qc)
 
-    table_freq_title = "".join([s.capitalize() for s in subdir.name.split("_")])
+    table_freq_title = "".join([s.capitalize() for s in subdir.split("_")])
     table = create_rich_table(samples, title=f"Monkeypox QC ({table_freq_title})", table_output=table_output)
 
     rprint(table)
@@ -279,7 +281,7 @@ class SubcladeAllele:
     clade: str
 
 
-def variant_table(results: Path, subdir: str, min_complete: float = 95.0, min_depth: float = 50):
+def variant_table(results: Path, subdir: str, min_complete: float = 95.0, min_depth: float = 50, genbank_file: Path = None):
 
     consensus_directory = results / "consensus" / subdir
 
@@ -292,13 +294,18 @@ def variant_table(results: Path, subdir: str, min_complete: float = 95.0, min_de
         sample_name = file.name.replace(".variants.tsv", "")
         df['SAMPLE'] = [sample_name for _ in df.iterrows()]
         variant_dfs.append(df)
-    
+
     variant_df = pandas.concat(variant_dfs)
     qc_df, _ = quality_control_consensus(results=results, subdir=subdir)
 
     qc_df_pass = qc_df[(qc_df["Completeness"] >= min_complete) & (qc_df["Mean Depth"] >= min_depth)]
 
     variant_df_pass = variant_df[variant_df["SAMPLE"].isin(qc_df_pass["Sample"])].reset_index()
+
+    # Decorate the passing sample variant table with additional information from the Genbank file
+
+    if genbank_file is not None:
+        variant_df_pass = decorate_variants(variant_table=variant_df_pass, genbank_file=genbank_file)
 
     # Only if aligned against Rivers reference genome (NC_063383.1)
     # using Nextstrain subclade assignments: https://github.com/nextstrain/monkeypox/blob/master/config/clades.tsv
@@ -315,16 +322,145 @@ def variant_table(results: Path, subdir: str, min_complete: float = 95.0, min_de
         SubcladeAllele(clade="B.1.5", position=70780, alt="T"),
     ]
 
-    print(f"SAMPLES PASS: {len(variant_df_pass['SAMPLE'].unique())}")
+    sample_pass = len(variant_df_pass['SAMPLE'].unique())
 
     for allele in subclade_alleles:
         positions = variant_df_pass[
             (variant_df_pass["POS"] == allele.position) & (variant_df_pass["ALT"] == allele.alt)
         ]
-        print(f"{allele.clade}: {len(positions)}")
-        if len(positions) > 0:
-            print(positions)
+
+def decorate_variants(variant_table: pandas.DataFrame, genbank_file: Path, context_size: int = 5, debug: bool = False):
+
+    """
+    Decorate the variant table with information from the GenBank reference, including:
+        * APOBEC3 context (+- variant context size on reference sequence) and flag
+        * Gene name and information (if verbose)
+    """
+
+    with open(genbank_file) as handle:
+        record = GenBank.read(handle)
+
+    apobec3_data = []
+    ns_data = []
+    for _, row in variant_table.iterrows():
+        sample = row["SAMPLE"]
+
+        pos = row["POS"]
+        pos_seq = pos-1  # 0-indexed sequence, 1-indexed POS
+
+        apobec3 = False
+        pattern = "other"
+        if row["REF"] == "C" and row["ALT"] == "T":
+            if record.sequence[pos_seq-1].capitalize() == "T":
+                apobec3 = True
+                pattern = "TC>TT"
+        if row["REF"] == "G" and row["ALT"] == "A":
+            if record.sequence[pos_seq+1].capitalize() == "A":
+                apobec3 = True
+                pattern = "GA>AA"
+
+        var_context, var_context_display = get_context_sequence(record, row["ALT"], pos_seq, context_size)
+
+        if debug:
+            rprint(
+                f"Variant [{row['SAMPLE']}: {pos}] context - REF: {row['REF']} ALT: {row['ALT']}"
+                f" - CONTEXT: {var_context} - APOBEC3: {apobec3}"
+            )
+
+        ns_data.append([sample, pos, row["REF_AA"] == row["ALT_AA"]])
+        apobec3_data.append([sample, pos, apobec3, pattern, var_context])
+
+    apobec_df = pandas.DataFrame(
+        apobec3_data, columns=["SAMPLE", "POS", "APOBEC3", "PATTERN", "CONTEXT"]
+    )
+    ns_df = pandas.DataFrame(
+        ns_data, columns=["SAMPLE", "POS", "NS"]
+    )
+
+    variants = pandas.merge(
+        variant_table, apobec_df, how='left', left_on=['POS', 'SAMPLE'], right_on=['POS', 'SAMPLE']
+    )
+
+    variants = pandas.merge(
+        variants, ns_df, how='left', left_on=['POS', 'SAMPLE'], right_on=['POS', 'SAMPLE']
+    )
+
+    plot_variant_frequencies(variants=variants, ref_length=len(record.sequence))
+
+    return variant_table
 
 
+def plot_variant_frequencies(variants: pandas.DataFrame, ref_length: int):
+    """
+    Create a plot of variant occurrence counts along their positions on the reference
+    """
+
+    fig, axes = plt.subplots(
+        nrows=2, ncols=1, figsize=(24, 14)
+    )
+
+    sns.set_style('white')
+
+    p1 = sns.scatterplot(data=variants, x="POS", y="ALT_FREQ", hue="PATTERN", ax=axes[0])
+    p1.set_xlim([1, ref_length])
+
+    p2 = sns.scatterplot(data=variants, x="POS", y="ALT_FREQ", hue="NS", ax=axes[1])
+    p2.set_xlim([1, ref_length])
+
+    plt.tight_layout()
+    fig.savefig("variant_freqs_all.png")
+
+
+
+
+
+def plot_apobec_frequencies(df: pandas.DataFrame):
+
+    """
+    Plot putative APOBEC3 frequencies across samples
+    """
+
+    pass
+
+
+def get_context_sequence(record, alt: str, vloc_seq: int, context_size: int, ):
+
+    """
+    Get the context sequence to print to console for checks
+    """
+
+    if vloc_seq - context_size < 0:
+        context_start = 0
+    else:
+        context_start = vloc_seq - context_size
+
+    if vloc_seq + context_size + 1 > len(record.sequence)-1:
+        context_end = len(record.sequence)-1
+    else:
+        context_end = vloc_seq + context_size + 1
+
+    var_context_display = record.sequence[context_start:vloc_seq] + \
+        f'[red]{alt}[/red]' + \
+        record.sequence[vloc_seq+1:context_end]
+
+    var_context = record.sequence[context_start:vloc_seq] + alt + record.sequence[vloc_seq+1:context_end]
+
+    return var_context, var_context_display
 
     
+def get_pattern_frequency(df: pandas.DataFrame) -> dict:
+
+    sample_freqs = {}
+    for sample, sample_df in df.groupby("SAMPLE"):
+        variants = len(sample_df)
+        pattern_frequency = {}
+        for pattern, pattern_df in sample_df.groupby("PATTERN"):
+            patterns = len(pattern_df)
+            pattern_frequency[pattern] = round(
+                (patterns/variants)*100, 4
+            )
+        pattern_frequency["total_apobec"] = 100 - pattern_frequency['other']
+        pattern_frequency["total"] = variants
+        sample_freqs[sample] = pattern_frequency
+
+    return sample_freqs
