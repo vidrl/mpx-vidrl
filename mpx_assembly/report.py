@@ -312,13 +312,13 @@ def variant_table(results: Path, subdir: str, min_complete: float = 95.0, min_de
         SubcladeAllele(clade="B.1.5", position=70780, alt="T"),
     ]
 
-
     print(f"SAMPLES PASS: {len(variant_df_pass['SAMPLE'].unique())}")
 
     for allele in subclade_alleles:
-        print(allele.clade)
         positions = variant_df_pass[variant_df_pass["POS"] == allele.position]
-        print(len(positions))
+        print(f"{allele.clade}: {len(positions)}")
+        if len(positions) > 0:
+            print(positions)
 
 
 
