@@ -314,8 +314,8 @@ def variant_table(results: Path, subdir: str, min_complete: float = 95.0, min_de
 
     for allele in subclade_alleles:
         print(allele.clade)
-        print(variant_df_pass[variant_df_pass["POS"] == subclade_alleles.position])
+        print(variant_df_pass[variant_df_pass["POS"] == allele.position])
 
-        
+
 
     
