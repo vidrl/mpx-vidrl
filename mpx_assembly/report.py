@@ -262,7 +262,6 @@ def snp_distance(dist: Path):
 
     p = sns.boxplot(x="distance", y="comparison", data=df, palette="colorblind", linewidth=2.5, ax=ax)
     sns.stripplot(x="distance", y="comparison", data=df, color="darkgray", alpha=0.8, jitter=0.3, size=8, ax=ax)
- 
 
     p.set_xticks(range(int(df['distance'].max())+1))
     p.set_xticklabels(range(int(df['distance'].max())+1))
@@ -293,5 +292,6 @@ def variant_table(results: Path, subdir: str, min_complete: float = 95.0, min_de
 
     variant_df_pass = variant_df[variant_df["SAMPLE"].isin(qc_df_pass.sample)]
     
-
+    print(variant_df_pass)
+    
     
