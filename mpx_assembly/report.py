@@ -272,6 +272,13 @@ def snp_distance(dist: Path):
     fig.savefig("test.png")
 
 
+@dataclass
+class SubcladeAllele:
+    position: int
+    alt: str
+    clade: str
+
+
 def variant_table(results: Path, subdir: str, min_complete: float = 95.0, min_depth: float = 50):
 
     consensus_directory = results / "consensus" / subdir
@@ -292,7 +299,23 @@ def variant_table(results: Path, subdir: str, min_complete: float = 95.0, min_de
     qc_df_pass = qc_df[(qc_df["Completeness"] >= min_complete) & (qc_df["Mean Depth"] >= min_depth)]
 
     variant_df_pass = variant_df[variant_df["SAMPLE"].isin(qc_df_pass["Sample"])]
-    
-    print(variant_df_pass)
+
+    # Only if aligned against Rivers reference genome (NC_063383.1)
+    # using Nextstrain subclade assignments: https://github.com/nextstrain/monkeypox/blob/master/config/clades.tsv
+
+    subclade_alleles = [
+        SubcladeAllele(clade="B.1", position=77383, alt="A"),
+        SubcladeAllele(clade="B.1.1", position=74360, alt="A"),
+        SubcladeAllele(clade="B.1.2", position=186165, alt="A"),
+        SubcladeAllele(clade="B.1.3", position=190660, alt="A"),
+        SubcladeAllele(clade="B.1.4", position=34308, alt="A"),
+        SubcladeAllele(clade="B.1.5", position=70780, alt="T"),
+    ]
+
+    for allele in subclade_alleles:
+        print(allele.clade)
+        print(variant_df_pass[variant_df_pass["POS"] == subclade_alleles.position])
+
+        
 
     
