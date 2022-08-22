@@ -280,7 +280,7 @@ def variant_table(results: Path, subdir: str, min_complete: float = 95.0, min_de
     for file in consensus_directory.glob("*.variants.tsv"):
         df = pandas.read_csv(file, sep="\t", header=0)
         if df.empty:
-            df = pandas.concat([df, [None for _ in df.columns]])
+            df.loc[0] = [None for _ in df.columns]
 
         sample_name = file.name.replace(".variants.tsv", "")
         df['SAMPLE'] = [sample_name for _ in df.iterrows()]
