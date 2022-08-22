@@ -298,7 +298,7 @@ def variant_table(results: Path, subdir: str, min_complete: float = 95.0, min_de
 
     qc_df_pass = qc_df[(qc_df["Completeness"] >= min_complete) & (qc_df["Mean Depth"] >= min_depth)]
 
-    variant_df_pass = variant_df[variant_df["SAMPLE"].isin(qc_df_pass["Sample"])]
+    variant_df_pass = variant_df[variant_df["SAMPLE"].isin(qc_df_pass["Sample"])].reset_index()
 
     # Only if aligned against Rivers reference genome (NC_063383.1)
     # using Nextstrain subclade assignments: https://github.com/nextstrain/monkeypox/blob/master/config/clades.tsv
@@ -312,9 +312,13 @@ def variant_table(results: Path, subdir: str, min_complete: float = 95.0, min_de
         SubcladeAllele(clade="B.1.5", position=70780, alt="T"),
     ]
 
+
+    print(f"SAMPLES PASS: {len(variant_df_pass['SAMPLE'].unique())}")
+
     for allele in subclade_alleles:
         print(allele.clade)
-        print(variant_df_pass[variant_df_pass["POS"] == allele.position])
+        positions = variant_df_pass[variant_df_pass["POS"] == allele.position]
+        print(len(positions))
 
 
 
