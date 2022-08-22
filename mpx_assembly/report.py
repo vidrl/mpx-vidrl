@@ -291,7 +291,7 @@ def variant_table(results: Path, subdir: str, min_complete: float = 95.0, min_de
 
     qc_df_pass = qc_df[(qc_df["Completeness"] >= min_complete) & (qc_df["Mean Depth"] >= min_depth)]
 
-    variant_df_pass = variant_df[variant_df["SAMPLE"].isin(qc_df_pass.sample)]
+    variant_df_pass = variant_df[variant_df["SAMPLE"].isin(qc_df_pass["sample"])]
     
     print(variant_df_pass)
 
