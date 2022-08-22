@@ -289,7 +289,7 @@ def variant_table(results: Path, subdir: str, min_complete: float = 95.0, min_de
     variant_df = pandas.concat(variant_dfs)
     qc_df, _ = quality_control_consensus(results=results, subdir=subdir)
 
-    qc_df_pass = qc_df[qc_df["Completeness"] >= min_complete & qc_df["Mean Depth"] >= min_depth]
+    qc_df_pass = qc_df[(qc_df["Completeness"] >= min_complete) & (qc_df["Mean Depth"] >= min_depth)]
 
     variant_df_pass = variant_df[variant_df["SAMPLE"].isin(qc_df_pass.sample)]
     
