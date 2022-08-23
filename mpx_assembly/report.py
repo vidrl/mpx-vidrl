@@ -281,7 +281,13 @@ class SubcladeAllele:
     clade: str
 
 
-def variant_table(results: Path, subdir: str, min_complete: float = 95.0, min_depth: float = 50, genbank_file: Path = None):
+def variant_table(
+    results: Path,
+    subdir: str,
+    min_complete: float = 95.0,
+    min_depth: float = 50,
+    genbank_file: Path = None
+):
 
     consensus_directory = results / "consensus" / subdir
 
@@ -329,12 +335,23 @@ def variant_table(results: Path, subdir: str, min_complete: float = 95.0, min_de
             (variant_df_pass["POS"] == allele.position) & (variant_df_pass["ALT"] == allele.alt)
         ]
 
-def decorate_variants(variant_table: pandas.DataFrame, genbank_file: Path, context_size: int = 5, debug: bool = False):
+
+def decorate_variants(
+    variant_table: pandas.DataFrame,
+    genbank_file: Path,
+    mask_file: Path = None,
+    context_size: int = 5,
+    debug: bool = False
+):
 
     """
     Decorate the variant table with information from the GenBank reference, including:
-        * APOBEC3 context (+- variant context size on reference sequence) and flag
-        * Gene name and information (if verbose)
+        * APOBEC3 target sites and context: code is validated against the program used by
+         the authors of the Nature Medicine communication
+
+         --> https://github.com/insapathogenomics/mutation_profile
+
+
     """
 
     with open(genbank_file) as handle:
@@ -377,15 +394,15 @@ def decorate_variants(variant_table: pandas.DataFrame, genbank_file: Path, conte
         ns_data, columns=["SAMPLE", "POS", "NS"]
     )
 
-    variants = pandas.merge(
+    variants_apobec = pandas.merge(
         variant_table, apobec_df, how='left', left_on=['POS', 'SAMPLE'], right_on=['POS', 'SAMPLE']
     )
 
-    variants = pandas.merge(
-        variants, ns_df, how='left', left_on=['POS', 'SAMPLE'], right_on=['POS', 'SAMPLE']
+    variants_ns = pandas.merge(
+        variants_apobec, ns_df, how='left', left_on=['POS', 'SAMPLE'], right_on=['POS', 'SAMPLE']
     )
 
-    plot_variant_frequencies(variants=variants, ref_length=len(record.sequence))
+    plot_variant_frequencies(variants=variants_ns, ref_length=len(record.sequence))
 
     return variant_table
 
@@ -410,8 +427,21 @@ def plot_variant_frequencies(variants: pandas.DataFrame, ref_length: int):
     plt.tight_layout()
     fig.savefig("variant_freqs_all.png")
 
+    for sample, sample_df in variants.groupby("SAMPLE"):
+        fig, axes = plt.subplots(
+            nrows=2, ncols=1, figsize=(24, 14)
+        )
 
+        sns.set_style('white')
 
+        p1 = sns.scatterplot(data=sample_df, x="POS", y="ALT_FREQ", hue="PATTERN", ax=axes[0])
+        p1.set_xlim([1, ref_length])
+
+        p2 = sns.scatterplot(data=sample_df, x="POS", y="ALT_FREQ", hue="NS", ax=axes[1])
+        p2.set_xlim([1, ref_length])
+
+        plt.tight_layout()
+        fig.savefig(f"variant_freqs_{sample}.png")
 
 
 def plot_apobec_frequencies(df: pandas.DataFrame):
