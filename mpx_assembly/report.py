@@ -305,7 +305,7 @@ def variant_table(
 
     if genbank_file is not None:
         variant_df_pass = decorate_variants(
-            variant_table=variant_df_pass, genbank_file=genbank_file, mask_file=mask_file
+            variant_table=variant_df_pass, genbank_file=genbank_file, mask_file=None
         )
 
 
@@ -319,11 +319,14 @@ def decorate_variants(
 
     """
     Decorate the variant table with information from the GenBank reference, including:
+
         * APOBEC3 target sites and context: code is validated against the program used by
-         the authors of the Nature Medicine communication
+         the authors of the Nature Medicine communication, produces same output and motif
+         frequencies per isolate
 
          --> https://github.com/insapathogenomics/mutation_profile
 
+        *
 
     """
 
@@ -334,8 +337,13 @@ def decorate_variants(
     ns_data = []
     for _, row in variant_table.iterrows():
         sample = row["SAMPLE"]
-
         pos = row["POS"]
+
+        if pos is None:
+            ns_data.append([sample, pos, None])
+            apobec3_data.append([sample, pos, None, None, None])
+            continue
+
         pos_seq = pos-1  # 0-indexed sequence, 1-indexed POS
 
         apobec3 = False
@@ -349,7 +357,10 @@ def decorate_variants(
                 apobec3 = True
                 pattern = "GA>AA"
 
-        var_context, var_context_display = get_context_sequence(record, row["ALT"], pos_seq, context_size)
+        if apobec3:
+            var_context, var_context_display = get_context_sequence(record, row["ALT"], pos_seq, context_size)
+        else:
+            var_context, var_context_display = "", ""
 
         if debug:
             rprint(
@@ -375,55 +386,144 @@ def decorate_variants(
         variants_apobec, ns_df, how='left', left_on=['POS', 'SAMPLE'], right_on=['POS', 'SAMPLE']
     )
 
-    plot_variant_frequencies(variants=variants_ns, ref_length=len(record.sequence))
-
+    plot_variant_frequencies(
+        variants=variants_ns,
+        ref_length=len(record.sequence),
+        outfile=Path("variant_freqs_all.png")
+    )
+    plot_apobec_frequencies(
+        df=variants_ns,
+        output_file=Path("apobec_pattern_sample.png")
+    )
+    plot_non_synonymous(
+        df=variants_ns,
+        output_file=Path("non_synonymous_sample.png")
+    )
     return variant_table
 
 
-def plot_variant_frequencies(variants: pandas.DataFrame, ref_length: int):
+def plot_variant_frequencies(variants: pandas.DataFrame, ref_length: int, outfile: Path):
     """
     Create a plot of variant occurrence counts along their positions on the reference
     """
 
+    create_frequency_plot(
+        df=variants,
+        output_file=outfile,
+        ref_length=ref_length
+    )
+
+    # for sample, sample_df in variants.groupby("SAMPLE"):
+    #     create_frequency_plot(
+    #         df=sample_df,
+    #         output_file=Path(f"variant_freqs_{sample}.png"),
+    #         ref_length=ref_length
+    #     )
+
+
+def create_frequency_plot(df: pandas.DataFrame, output_file: Path, ref_length: int):
+    """
+    Create the plot and save to file
+    """
     fig, axes = plt.subplots(
         nrows=2, ncols=1, figsize=(24, 14)
     )
-
     sns.set_style('white')
-
-    p1 = sns.scatterplot(data=variants, x="POS", y="ALT_FREQ", hue="PATTERN", ax=axes[0])
+    p1 = sns.scatterplot(
+        data=df, x="POS", y="ALT_FREQ", hue="PATTERN", ax=axes[0], palette=['#A092B7', '#4d5f8e', '#51806a']
+    )
     p1.set_xlim([1, ref_length])
-
-    p2 = sns.scatterplot(data=variants, x="POS", y="ALT_FREQ", hue="NS", ax=axes[1])
+    p2 = sns.scatterplot(
+        data=df, x="POS", y="ALT_FREQ", hue="NS", ax=axes[1], palette=['#A092B7', '#51806a']
+    )
     p2.set_xlim([1, ref_length])
-
     plt.tight_layout()
-    fig.savefig("variant_freqs_all.png")
-
-    for sample, sample_df in variants.groupby("SAMPLE"):
-        fig, axes = plt.subplots(
-            nrows=2, ncols=1, figsize=(24, 14)
-        )
-
-        sns.set_style('white')
-
-        p1 = sns.scatterplot(data=sample_df, x="POS", y="ALT_FREQ", hue="PATTERN", ax=axes[0])
-        p1.set_xlim([1, ref_length])
-
-        p2 = sns.scatterplot(data=sample_df, x="POS", y="ALT_FREQ", hue="NS", ax=axes[1])
-        p2.set_xlim([1, ref_length])
-
-        plt.tight_layout()
-        fig.savefig(f"variant_freqs_{sample}.png")
+    fig.savefig(output_file)
 
 
-def plot_apobec_frequencies(df: pandas.DataFrame):
+def plot_apobec_frequencies(df: pandas.DataFrame, output_file: Path):
 
     """
     Plot putative APOBEC3 frequencies across samples
     """
 
-    pass
+    pattern_count_data = []
+    pattern_freq_data = []
+    for sample, sample_df in df[["SAMPLE", "PATTERN"]].groupby(["SAMPLE"]):
+        pattern_counts = sample_df.groupby("PATTERN").count()["SAMPLE"]
+        pattern_counts.name = sample
+        pattern_counts.index.name = "MOTIF"
+
+        try:
+            ga = pattern_counts["GA>AA"]
+        except KeyError:
+            ga = 0
+
+        try:
+            tc = pattern_counts["TC>TT"]
+        except KeyError:
+            tc = 0
+
+        try:
+            other = pattern_counts["other"]
+        except KeyError:
+            other = 0
+
+        if ga == 0 and tc == 0:
+            apobec_frac = 0
+            other_frac = 0
+        else:
+            total_variants = ga+tc+other
+            apobec_sum = ga+tc
+            apobec_frac = round((apobec_sum / total_variants) * 100, 4)
+            other_frac = 100 - apobec_frac
+
+        pattern_freq_data.append([sample, apobec_frac, other_frac])
+        pattern_count_data.append(pattern_counts)
+
+    dfp = pandas.DataFrame(pattern_count_data)
+    dff = pandas.DataFrame(
+        pattern_freq_data,
+        columns=["Sample", "Putative APOBEC3 target sites", "Other"]
+    ).set_index("Sample")
+
+    print("APOBEC mean freq", mean(dff["Putative APOBEC3 target sites"]))
+
+    fig, axes = plt.subplots(
+        nrows=2, ncols=1, figsize=(24, 14)
+    )
+    p1 = dfp.plot(kind='bar', stacked=True, color=['#A092B7', '#4d5f8e', '#51806a'], ax=axes[0])
+    p1.set_xlabel("Samples")
+    p1.set_ylabel("Pattern counts")
+
+    p2 = dff.plot(kind='bar', stacked=True, color=['#A092B7', '#51806a'], ax=axes[1])
+    p2.set_xlabel("Samples")
+    p2.set_ylabel("Pattern frequency")
+
+    plt.tight_layout()
+    fig.savefig(output_file)
+
+
+def plot_non_synonymous(df: pandas.DataFrame, output_file: Path):
+
+    ns_count_data = []
+    for sample, sample_df in df[["SAMPLE", "NS"]].groupby(["SAMPLE"]):
+        ns_counts = sample_df.groupby("NS").count()["SAMPLE"]
+        ns_counts.name = sample
+        ns_counts.index.name = "Non-synonymous mutation"
+        ns_count_data.append((ns_counts/ns_counts.sum())*100)
+
+    dfp = pandas.DataFrame(ns_count_data)
+
+    fig, ax = plt.subplots(
+        nrows=1, ncols=1, figsize=(24, 14)
+    )
+    p1 = dfp.plot(kind='bar', stacked=True, color=['#A092B7', '#51806a'], ax=ax)
+    p1.set_xlabel("Samples")
+    p1.set_ylabel("Mutation effect frequency")
+
+    plt.tight_layout()
+    fig.savefig(output_file)
 
 
 def get_context_sequence(record, alt: str, vloc_seq: int, context_size: int, ):
@@ -449,21 +549,3 @@ def get_context_sequence(record, alt: str, vloc_seq: int, context_size: int, ):
     var_context = record.sequence[context_start:vloc_seq] + alt + record.sequence[vloc_seq+1:context_end]
 
     return var_context, var_context_display
-
-    
-def get_pattern_frequency(df: pandas.DataFrame) -> dict:
-
-    sample_freqs = {}
-    for sample, sample_df in df.groupby("SAMPLE"):
-        variants = len(sample_df)
-        pattern_frequency = {}
-        for pattern, pattern_df in sample_df.groupby("PATTERN"):
-            patterns = len(pattern_df)
-            pattern_frequency[pattern] = round(
-                (patterns/variants)*100, 4
-            )
-        pattern_frequency["total_apobec"] = 100 - pattern_frequency['other']
-        pattern_frequency["total"] = variants
-        sample_freqs[sample] = pattern_frequency
-
-    return sample_freqs
