@@ -274,13 +274,6 @@ def snp_distance(dist: Path):
     fig.savefig("test.png")
 
 
-@dataclass
-class SubcladeAllele:
-    position: int
-    alt: str
-    clade: str
-
-
 def variant_table(
     results: Path,
     subdir: str,
@@ -311,7 +304,9 @@ def variant_table(
     # Decorate the passing sample variant table with additional information from the Genbank file
 
     if genbank_file is not None:
-        variant_df_pass = decorate_variants(variant_table=variant_df_pass, genbank_file=genbank_file)
+        variant_df_pass = decorate_variants(
+            variant_table=variant_df_pass, genbank_file=genbank_file, mask_file=mask_file
+        )
 
 
 def decorate_variants(
