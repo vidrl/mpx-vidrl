@@ -313,28 +313,6 @@ def variant_table(
     if genbank_file is not None:
         variant_df_pass = decorate_variants(variant_table=variant_df_pass, genbank_file=genbank_file)
 
-    # Only if aligned against Rivers reference genome (NC_063383.1)
-    # using Nextstrain subclade assignments: https://github.com/nextstrain/monkeypox/blob/master/config/clades.tsv
-
-    subclade_alleles = [
-        SubcladeAllele(clade="A.1", position=83326, alt="T"),
-        SubcladeAllele(clade="A.1.1", position=34459, alt="A"),
-        SubcladeAllele(clade="A.2", position=34472, alt="T"),
-        SubcladeAllele(clade="B.1", position=77383, alt="A"),
-        SubcladeAllele(clade="B.1.1", position=74360, alt="A"),
-        SubcladeAllele(clade="B.1.2", position=186165, alt="A"),
-        SubcladeAllele(clade="B.1.3", position=190660, alt="A"),
-        SubcladeAllele(clade="B.1.4", position=34308, alt="A"),
-        SubcladeAllele(clade="B.1.5", position=70780, alt="T"),
-    ]
-
-    sample_pass = len(variant_df_pass['SAMPLE'].unique())
-
-    for allele in subclade_alleles:
-        positions = variant_df_pass[
-            (variant_df_pass["POS"] == allele.position) & (variant_df_pass["ALT"] == allele.alt)
-        ]
-
 
 def decorate_variants(
     variant_table: pandas.DataFrame,
