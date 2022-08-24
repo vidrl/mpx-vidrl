@@ -51,11 +51,21 @@ def variants(
         ),
         genbank: Path = typer.Option(
             None, help="Genbank file of reference to use for additional variant annotations"
+        ),
+        mask: Path = typer.Option(
+            None, help="Mask file (TSV) to annotate variants with masked regions"
+        ),
+        freq_alpha: float = typer.Option(
+            0.3, help="Opacity of variant distribution dots"
         )
+
 ):
     """
     Variant call summary
     """
 
-    variant_table(results=results, subdir=subdir, min_complete=0.95, min_depth=50, genbank_file=genbank)
+    variant_table(
+        results=results, subdir=subdir,
+        min_complete=0.95, min_depth=50, genbank_file=genbank, mask_file=mask, freq_alpha=freq_alpha
+    )
 

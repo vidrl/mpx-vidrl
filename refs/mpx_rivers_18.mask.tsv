@@ -1,0 +1,15 @@
+chrom	start	end	annotation	source
+NC_063383.1	1	6422	terminal_repeat	GBK
+NC_063383.1	190788	197209	terminal_repeat	GBK
+NC_063383.1	133078	133102	homopolymer	TRF
+NC_063383.1	136513	136569	tandem_repeat	TRF
+NC_063383.1	140105	140173	tandem_repeat	TRF
+NC_063383.1	141976	142021	tandem_repeat	TRF
+NC_063383.1	146848	146912	tandem_repeat	TRF
+NC_063383.1	150544	150628	tandem_repeat	TRF
+NC_063383.1	163190	163214	tandem_repeat	TRF
+NC_063383.1	166091	166116	tandem_repeat	TRF
+NC_063383.1	169722	169774	tandem_repeat	TRF
+NC_063383.1	173274	173317	tandem_repeat	TRF
+NC_063383.1	174519	174547	tandem_repeat	TRF
+NC_063383.1	179077	179243	tandem_repeat	TRF

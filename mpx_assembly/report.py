@@ -2,10 +2,8 @@
 Monkeypox assembly report
 """
 
-from cmath import nan
 import json
-from multiprocessing.sharedctypes import Value
-import numpy
+import matplotlib.patches as patches
 
 import pandas
 from pathlib import Path
@@ -19,7 +17,7 @@ from statistics import median, mean
 import seaborn as sns
 from matplotlib import pyplot as plt
 from Bio import GenBank
-from Bio.Seq import Seq
+from Bio import SeqIO
 
 
 @dataclass
@@ -279,7 +277,9 @@ def variant_table(
     subdir: str,
     min_complete: float = 95.0,
     min_depth: float = 50,
-    genbank_file: Path = None
+    genbank_file: Path = None,
+    mask_file: Path = None,
+    freq_alpha: float = 0.3
 ):
 
     consensus_directory = results / "consensus" / subdir
@@ -299,22 +299,23 @@ def variant_table(
 
     qc_df_pass = qc_df[(qc_df["Completeness"] >= min_complete) & (qc_df["Mean Depth"] >= min_depth)]
 
-    variant_df_pass = variant_df[variant_df["SAMPLE"].isin(qc_df_pass["Sample"])].reset_index()
+    variant_df_pass = variant_df[variant_df["SAMPLE"].isin(qc_df_pass["Sample"])].reset_index(drop=True)
 
     # Decorate the passing sample variant table with additional information from the Genbank file
 
-    if genbank_file is not None:
+    if genbank_file is not None and mask_file is not None:
         variant_df_pass = decorate_variants(
-            variant_table=variant_df_pass, genbank_file=genbank_file, mask_file=None
+            variant_table=variant_df_pass, genbank_file=genbank_file, mask_file=mask_file, freq_alpha=freq_alpha
         )
 
 
 def decorate_variants(
     variant_table: pandas.DataFrame,
     genbank_file: Path,
-    mask_file: Path = None,
+    mask_file: Path,
     context_size: int = 5,
-    debug: bool = False
+    debug: bool = False,
+    freq_alpha: float = 0.3
 ):
 
     """
@@ -336,12 +337,11 @@ def decorate_variants(
     apobec3_data = []
     ns_data = []
     for _, row in variant_table.iterrows():
-        sample = row["SAMPLE"]
         pos = row["POS"]
 
         if pos is None:
-            ns_data.append([sample, pos, None])
-            apobec3_data.append([sample, pos, None, None, None])
+            ns_data.append([None])
+            apobec3_data.append([None, None, None])
             continue
 
         pos_seq = pos-1  # 0-indexed sequence, 1-indexed POS
@@ -368,60 +368,206 @@ def decorate_variants(
                 f" - CONTEXT: {var_context} - APOBEC3: {apobec3}"
             )
 
-        ns_data.append([sample, pos, row["REF_AA"] == row["ALT_AA"]])
-        apobec3_data.append([sample, pos, apobec3, pattern, var_context])
+        if row["ALT_AA"] is np.nan:
+            ns_data.append([False])
+        else:
+            ns_data.append([row["REF_AA"] != row["ALT_AA"]])
+
+        apobec3_data.append([apobec3, pattern, var_context])
 
     apobec_df = pandas.DataFrame(
-        apobec3_data, columns=["SAMPLE", "POS", "APOBEC3", "PATTERN", "CONTEXT"]
+        apobec3_data, columns=["APOBEC3", "PATTERN", "CONTEXT"]
     )
     ns_df = pandas.DataFrame(
-        ns_data, columns=["SAMPLE", "POS", "NS"]
+        ns_data, columns=["NS"]
     )
 
-    variants_apobec = pandas.merge(
-        variant_table, apobec_df, how='left', left_on=['POS', 'SAMPLE'], right_on=['POS', 'SAMPLE']
-    )
+    variants_apobec = variant_table.join(apobec_df)
+    variants_ns = variants_apobec.join(ns_df)
 
-    variants_ns = pandas.merge(
-        variants_apobec, ns_df, how='left', left_on=['POS', 'SAMPLE'], right_on=['POS', 'SAMPLE']
-    )
+    variants_masked, mask_df = annotate_masked_regions(variants_ns, mask_file)
+    variants_cds = annotate_cds(variants_masked, genbank_file)
 
-    plot_variant_frequencies(
-        variants=variants_ns,
+    if debug:
+        print("APOBEC3")
+        print(apobec_df)
+        print("NS")
+        print(ns_df)
+        print("BASE")
+        print(variant_table)
+        print("APOBEC MERGE")
+        print(variants_apobec)
+        print("NS MERGE")
+        print(variants_ns)
+        print("MASK MERGE")
+        print(variants_cds)
+        print(variants_cds[variants_cds["MASK"] == True])
+
+    mask_cds_df = get_mask_cds(genbank_file=genbank_file, mask_df=mask_df)
+
+    variant_summary = get_variant_pop_summary(variants=variants_cds)
+
+    mask_name = mask_file.name.split(".")[-2]
+    gbk_name = genbank_file.name.split(".")[-2]
+
+    plot_variant_distribution(
+        df=variants_cds,
         ref_length=len(record.sequence),
-        outfile=Path("variant_freqs_all.png")
+        output_file=Path(f"variant_distr_{mask_name}_{gbk_name}.png"),
+        mask_df=mask_df,
+        freq_alpha=freq_alpha
     )
+
     plot_apobec_frequencies(
-        df=variants_ns,
-        output_file=Path("apobec_pattern_sample.png")
+        df=variants_cds,
+        output_file=Path(f"apobec_sample_{gbk_name}.png")
     )
     plot_non_synonymous(
-        df=variants_ns,
-        output_file=Path("non_synonymous_sample.png")
-    )
-    return variant_table
-
-
-def plot_variant_frequencies(variants: pandas.DataFrame, ref_length: int, outfile: Path):
-    """
-    Create a plot of variant occurrence counts along their positions on the reference
-    """
-
-    create_frequency_plot(
-        df=variants,
-        output_file=outfile,
-        ref_length=ref_length
+        df=variants_cds,
+        output_file=Path(f"ns_sample_{gbk_name}.png")
     )
 
-    # for sample, sample_df in variants.groupby("SAMPLE"):
-    #     create_frequency_plot(
-    #         df=sample_df,
-    #         output_file=Path(f"variant_freqs_{sample}.png"),
-    #         ref_length=ref_length
-    #     )
+    variant_summary.to_csv(f"variants_summary_{mask_name}_{gbk_name}.tsv", sep="\t", index=False)
+    variants_cds.to_csv(f"variants_{mask_name}_{gbk_name}.tsv", sep="\t", index=False)
+    mask_cds_df.to_csv(f"mask_cds_{mask_name}_{gbk_name}.tsv", sep="\t", index=False)
+
+    return variants_cds
 
 
-def create_frequency_plot(df: pandas.DataFrame, output_file: Path, ref_length: int):
+def get_variant_pop_summary(variants: pandas.DataFrame):
+
+    samples = len(variants["SAMPLE"].unique())
+    var_data = []
+    for _, data in variants.groupby(["POS", "REF", "ALT"]):
+        rep = data.iloc[0]
+        rep = rep.drop(
+            labels=[
+                "REF_DP", "REF_RV", "REF_QUAL", "ALT_DP", "ALT_RV", "ALT_QUAL", "ALT_FREQ", "TOTAL_DP", "PASS", "PVAL"
+            ]
+        )
+        rep["POP_COUNT"] = len(data)
+        rep["POP_FREQ"] = len(data)/samples
+        var_data.append(rep)
+
+    return pandas.DataFrame(var_data)
+
+
+def annotate_masked_regions(variants: pandas.DataFrame, file: Path):
+    """
+    Annotate variants with the masked regions from 1-indexed reference file
+    """
+    mask = pandas.read_csv(file, sep="\t", header=0)
+
+    mask_data = []
+    for _, variant in variants.iterrows():
+        masked = False
+        annotation = None
+        source = None
+        if variant["POS"] is not None:  # otherwise no variants called
+            for _, region in mask.iterrows():
+                start, end = region['start'], region['end']
+                mask_range = range(start, end + 1)
+                if int(variant["POS"]) in mask_range:
+                    masked = True
+                    annotation = region['annotation']
+                    source = region['source']
+        mask_data.append([masked, annotation, source])
+
+    mask_df = pandas.DataFrame(mask_data, columns=["MASK", "MASK_TYPE", "MASK_SOURCE"])
+    variants_masked = variants.join(mask_df)
+
+    return variants_masked, mask
+
+
+def read_cds_features(genbank_file: Path):
+
+    cds = []
+    for rec in SeqIO.parse(genbank_file, "genbank"):
+        if rec.features:
+            for feature in rec.features:
+                if feature.type == "CDS":
+                    cds.append(feature)
+    return cds
+
+
+def get_mask_cds(genbank_file: Path, mask_df: pandas.DataFrame):
+
+    cds_features = read_cds_features(genbank_file)
+    mask_data = []
+    for _, region in mask_df.iterrows():
+        start, end = region['start'], region['end']
+        mask_range = range(start, end+1)
+
+        mask_features = []
+        for feature in cds_features:
+            if feature.location._start.position in mask_range or feature.location._end.position in mask_range:
+                gene, locus_tag, protein_id, product, note = extract_feature_qualifiers(feature=feature)
+                mask_features.append(region.to_list() + [gene, locus_tag, protein_id, product, note])
+        mask_data += mask_features
+
+    mask_feature_df = pandas.DataFrame(
+        mask_data, columns=[
+            "chrom", "start", "end", "annotation", "source",
+            "GBK_GENE", "GBK_LOCUS_TAG", "GBK_PROTEIN_ID", "GBK_PRODUCT", "GBK_NOTE"
+        ]
+    )
+
+    return mask_feature_df
+
+
+def annotate_cds(variants: pandas.DataFrame, genbank_file: Path):
+
+    cds_features = read_cds_features(genbank_file)
+    cds_data = []
+    for _, variant in variants.iterrows():
+        if variant['POS'] is None:
+            continue
+
+        seq_pos = variant['POS']-1
+
+        intergenic = True
+        gene = None
+        locus_tag = None
+        protein_id = None
+        product = None
+        note = None
+
+        for feat in cds_features:
+            if seq_pos in feat:
+                intergenic = False
+                gene, locus_tag, protein_id, product, note = extract_feature_qualifiers(feature=feat)
+
+        cds_data.append([intergenic, gene, locus_tag, protein_id, product, note])
+
+    cds_df = pandas.DataFrame(
+        cds_data, columns=["INTERGENIC", "GBK_GENE", "GBK_LOCUS_TAG", "GBK_PROTEIN_ID", "GBK_PRODUCT", "GBK_NOTE"]
+    )
+
+    return variants.join(cds_df)
+
+
+def extract_feature_qualifiers(feature):
+
+    gene = feature.qualifiers.get("gene")
+    if gene is not None:
+        gene = ";".join(gene)
+    locus_tag = feature.qualifiers.get("locus_tag")
+    if locus_tag is not None:
+        locus_tag = ";".join(locus_tag)
+    protein_id = feature.qualifiers.get("protein_id")
+    if protein_id is not None:
+        protein_id = ";".join(protein_id)
+    product = feature.qualifiers.get("product")
+    if product is not None:
+        product = ";".join(product)
+    note = feature.qualifiers.get("note")
+    if note is not None:
+        note = ";".join(note)
+
+    return gene, locus_tag, protein_id, product, note
+
+
+def plot_variant_distribution(df: pandas.DataFrame, output_file: Path, ref_length: int, mask_df: pandas.DataFrame, freq_alpha: float = 0.3):
     """
     Create the plot and save to file
     """
@@ -430,13 +576,25 @@ def create_frequency_plot(df: pandas.DataFrame, output_file: Path, ref_length: i
     )
     sns.set_style('white')
     p1 = sns.scatterplot(
-        data=df, x="POS", y="ALT_FREQ", hue="PATTERN", ax=axes[0], palette=['#A092B7', '#4d5f8e', '#51806a']
+        data=df, x="POS", y="ALT_FREQ", hue="APOBEC3", ax=axes[0], palette={True: '#A092B7', False: '#51806a'}, alpha=freq_alpha, s=50
     )
     p1.set_xlim([1, ref_length])
+    p1.set_xticks(range(0, ref_length+1, 5000))
     p2 = sns.scatterplot(
-        data=df, x="POS", y="ALT_FREQ", hue="NS", ax=axes[1], palette=['#A092B7', '#51806a']
+        data=df, x="POS", y="ALT_FREQ", hue="NS", ax=axes[1], palette={True: '#A092B7', False: '#51806a'}, alpha=freq_alpha, s=50
     )
     p2.set_xlim([1, ref_length])
+    p2.set_xticks(range(0, ref_length + 1, 5000))
+
+    for _, mask_region in mask_df.iterrows():
+        start, end = int(mask_region['start']), int(mask_region['end'])
+        width = end - start
+        rect1 = patches.Rectangle((start, 0), width, 1.01, linewidth=0.1, edgecolor=None, facecolor='gray', alpha=0.3)
+        rect2 = patches.Rectangle((start, 0), width, 1.01, linewidth=0.1, edgecolor=None, alpha=0.3, facecolor='gray')
+        p1.add_patch(rect1)
+
+        p2.add_patch(rect2)
+
     plt.tight_layout()
     fig.savefig(output_file)
 
