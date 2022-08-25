@@ -279,7 +279,9 @@ def variant_table(
     min_depth: float = 50,
     genbank_file: Path = None,
     mask_file: Path = None,
-    freq_alpha: float = 0.3
+    freq_alpha: float = 0.3,
+    variant_pass: bool = True,
+    low_freq_depth: str = None
 ):
 
     consensus_directory = results / "consensus" / subdir
@@ -305,7 +307,8 @@ def variant_table(
 
     if genbank_file is not None and mask_file is not None:
         variant_df_pass = decorate_variants(
-            variant_table=variant_df_pass, genbank_file=genbank_file, mask_file=mask_file, freq_alpha=freq_alpha
+            variant_table=variant_df_pass, genbank_file=genbank_file, mask_file=mask_file, freq_alpha=freq_alpha,
+            variant_pass=variant_pass, subdir=subdir, low_freq_depth=low_freq_depth
         )
 
 
@@ -315,7 +318,10 @@ def decorate_variants(
     mask_file: Path,
     context_size: int = 5,
     debug: bool = False,
-    freq_alpha: float = 0.3
+    freq_alpha: float = 0.3,
+    variant_pass: bool = True,
+    subdir: str = "high_freq",
+    low_freq_depth: str = None
 ):
 
     """
@@ -375,6 +381,8 @@ def decorate_variants(
 
         apobec3_data.append([apobec3, pattern, var_context])
 
+    # Annotate
+
     apobec_df = pandas.DataFrame(
         apobec3_data, columns=["APOBEC3", "PATTERN", "CONTEXT"]
     )
@@ -387,6 +395,25 @@ def decorate_variants(
 
     variants_masked, mask_df = annotate_masked_regions(variants_ns, mask_file)
     variants_cds = annotate_cds(variants_masked, genbank_file)
+
+    # Filter
+
+    if variant_pass:
+        variants_cds = variants_cds[variants_cds["PASS"] == True]
+
+    if low_freq_depth:
+        settings = [setting.split(":") for setting in low_freq_depth.split("-")]
+        for (freq, min_depth) in sorted(settings, key=lambda x: x[0]):
+            # Sort by frequency thresholds, then apply the minimum depth criterion
+            # this will drop variants successively e.g. first those <= 1% and < 1000x
+            # then <= 5% and 300x, then <= 10% and 100x (Nature Medicine microevolution)
+            var_cds = variants_cds.copy()
+            for idx, variant in var_cds.iterrows():
+                if variant["ALT_FREQ"] <= float(freq) and variant["ALT_DP"] < int(min_depth):
+                    if debug:
+                        print(f"FAIL variant : {variant['ALT_FREQ']} with {variant['ALT_DP']}")
+                    variants_cds.drop(idx, inplace=True)
+            variants_cds.reset_index(drop=True, inplace=True)
 
     if debug:
         print("APOBEC3")
@@ -413,23 +440,23 @@ def decorate_variants(
     plot_variant_distribution(
         df=variants_cds,
         ref_length=len(record.sequence),
-        output_file=Path(f"variant_distr_{mask_name}_{gbk_name}.png"),
+        output_file=Path(f"variant_distr_{subdir}_{mask_name}_{gbk_name}.png"),
         mask_df=mask_df,
         freq_alpha=freq_alpha
     )
 
     plot_apobec_frequencies(
         df=variants_cds,
-        output_file=Path(f"apobec_sample_{gbk_name}.png")
+        output_file=Path(f"apobec_sample_{subdir}_{gbk_name}.png")
     )
     plot_non_synonymous(
         df=variants_cds,
-        output_file=Path(f"ns_sample_{gbk_name}.png")
+        output_file=Path(f"ns_sample_{subdir}_{gbk_name}.png")
     )
 
-    variant_summary.to_csv(f"variants_summary_{mask_name}_{gbk_name}.tsv", sep="\t", index=False)
-    variants_cds.to_csv(f"variants_{mask_name}_{gbk_name}.tsv", sep="\t", index=False)
-    mask_cds_df.to_csv(f"mask_cds_{mask_name}_{gbk_name}.tsv", sep="\t", index=False)
+    variant_summary.to_csv(f"variants_summary_{subdir}_{mask_name}_{gbk_name}.tsv", sep="\t", index=False)
+    variants_cds.to_csv(f"variants_{subdir}_{mask_name}_{gbk_name}.tsv", sep="\t", index=False)
+    mask_cds_df.to_csv(f"mask_cds_{subdir}_{mask_name}_{gbk_name}.tsv", sep="\t", index=False)
 
     return variants_cds
 
@@ -442,15 +469,20 @@ def get_variant_pop_summary(variants: pandas.DataFrame):
         rep = data.iloc[0]
         rep = rep.drop(
             labels=[
-                "REF_DP", "REF_RV", "REF_QUAL", "ALT_DP", "ALT_RV", "ALT_QUAL", "ALT_FREQ", "TOTAL_DP", "PASS", "PVAL"
+                "REF_DP", "REF_RV", "REF_QUAL", "ALT_DP", "ALT_RV", "ALT_QUAL", "ALT_FREQ",
+                "TOTAL_DP", "PASS", "PVAL", "SAMPLE"
             ]
         )
         rep["POP_COUNT"] = len(data)
         rep["POP_FREQ"] = len(data)/samples
         var_data.append(rep)
 
-    return pandas.DataFrame(var_data)
-
+    var_data = pandas.DataFrame(var_data)
+    cols_no_pop = var_data.columns.tolist()[:-2]
+    cols_no_pop.insert(1, "POP_COUNT")
+    cols_no_pop.insert(2, "POP_FREQ")
+    var_data = var_data.reindex(columns=cols_no_pop)
+    return var_data
 
 def annotate_masked_regions(variants: pandas.DataFrame, file: Path):
     """
@@ -519,8 +551,11 @@ def annotate_cds(variants: pandas.DataFrame, genbank_file: Path):
 
     cds_features = read_cds_features(genbank_file)
     cds_data = []
+
     for _, variant in variants.iterrows():
         if variant['POS'] is None:
+            # No variants called (e.g. US-CDC some isolates from Australia)
+            cds_data.append([None, None, None, None, None, None])
             continue
 
         seq_pos = variant['POS']-1
@@ -543,8 +578,14 @@ def annotate_cds(variants: pandas.DataFrame, genbank_file: Path):
         cds_data, columns=["INTERGENIC", "GBK_GENE", "GBK_LOCUS_TAG", "GBK_PROTEIN_ID", "GBK_PRODUCT", "GBK_NOTE"]
     )
 
-    return variants.join(cds_df)
+    print(cds_df.index.to_list())
 
+
+    variants_cds = variants.join(cds_df)
+
+    print(variants_cds[variants_cds["POS"] == 22469])
+
+    return variants_cds
 
 def extract_feature_qualifiers(feature):
 

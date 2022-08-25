@@ -57,7 +57,14 @@ def variants(
         ),
         freq_alpha: float = typer.Option(
             0.3, help="Opacity of variant distribution dots"
-        )
+        ),
+        variant_pass: bool = typer.Option(
+            False, help="Include only PASS variants in the summary outputs [mainly for low frequency summaries]"
+        ),
+        low_freq_depth: str = typer.Option(
+            None, help="Dash separated string of {var_freq}:{min_depth}-{var_freq}:{min_depth} to filter variants below"
+                       " frequency thresholds dependent on their depth"
+        ),
 
 ):
     """
@@ -65,7 +72,7 @@ def variants(
     """
 
     variant_table(
-        results=results, subdir=subdir,
+        results=results, subdir=subdir, variant_pass=variant_pass, low_freq_depth=low_freq_depth,
         min_complete=0.95, min_depth=50, genbank_file=genbank, mask_file=mask, freq_alpha=freq_alpha
     )
 
