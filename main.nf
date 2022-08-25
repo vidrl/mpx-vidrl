@@ -31,15 +31,15 @@ include { MinimapAlignSortedBam } from './modules/minimap2' addParams(
     stage: "alignments",
     subdir: ""
 )
-include { IvarConsensus as IvarConsensusHighFrequency }  from './modules/ivar' addParams(
+include { Ivar as IvarHighFrequency }  from './modules/ivar' addParams(
     stage: "consensus",
     subdir: "high_freq",
-    ivar_consensus_min_freq: params.ivar_consensus_min_freq_high
+    ivar_min_freq: params.ivar_min_freq_high
 )
-include { IvarConsensus as IvarConsensusLowFrequency } from './modules/ivar' addParams(
+include { Ivar as IvarLowFrequency } from './modules/ivar' addParams(
     stage: "consensus",
     subdir: "low_freq",
-    ivar_consensus_min_freq: params.ivar_consensus_min_freq_low
+    ivar_min_freq: params.ivar_min_freq_low
 )
 include { Coverage } from './modules/coverage' addParams(
     stage: "coverage",
@@ -59,7 +59,7 @@ workflow host_depletion {
 }
 
 // Read quality control, coverage data, consensus assembly, variant calls
-workflow qc_consensus_assembly {
+workflow qc_variants_assembly {
     take:
         reads
         reference
@@ -68,12 +68,12 @@ workflow qc_consensus_assembly {
         qc_reads = Fastp(reads)
         aligned_reads = MinimapAlignSortedBam(qc_reads[0], reference)
         coverage = Coverage(aligned_reads)
-        consensus_assembly_high = IvarConsensusHighFrequency(aligned_reads, reference, gff)
-        consensus_assembly_low = IvarConsensusLowFrequency(aligned_reads, reference, gff)
-    emit:
-        consensus_assembly_high
-        consensus_assembly_low
-        coverage
+        if (params.ivar_freq_low) {
+            ivar__low = IvarLowFrequency(aligned_reads, reference, gff)
+        }
+        if (params.ivar_freq_high) {
+            ivar_high = IvarHighFrequency(aligned_reads, reference, gff)
+        }
 }
 
 workflow {
@@ -81,7 +81,7 @@ workflow {
     reads = channel.fromFilePairs(params.fastq, flat: true)
     reference = check_file(params.reference)
     gff = check_file(params.gff)
-    qc_consensus_assembly(reads, reference, gff)
+    qc_variants_assembly(reads, reference, gff)
 
 }
 

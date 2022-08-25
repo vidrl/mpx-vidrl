@@ -1,4 +1,4 @@
-process IvarConsensus {
+process Ivar {
 
     tag { "$id : $idx_name" }
     label "ivar"
@@ -18,15 +18,15 @@ process IvarConsensus {
 
     """
     samtools mpileup $params.samtools_mpileup_args -d $params.samtools_mpileup_max_depth -A -Q 0 $bam | ivar consensus -p ${id}.consensus \
-        -q $params.ivar_consensus_min_qual \
-        -t $params.ivar_consensus_min_freq \
-        -m $params.ivar_consensus_min_depth \
-        -n $params.ivar_consensus_fill_char
+        -q $params.ivar_min_qual \
+        -t $params.ivar_min_freq \
+        -m $params.ivar_min_depth \
+        -n $params.ivar_fill_char
     
     samtools mpileup $params.samtools_mpileup_args -d $params.samtools_mpileup_max_depth -A -Q 0 $bam | ivar variants -p ${id}.variants \
-        -q $params.ivar_consensus_min_qual \
-        -t $params.ivar_consensus_min_freq \
-        -m $params.ivar_consensus_min_depth \
+        -q $params.ivar_min_qual \
+        -t $params.ivar_min_freq \
+        -m $params.ivar_min_depth \
         -r $reference \
         -g $gff
 
