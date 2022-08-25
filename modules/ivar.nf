@@ -17,13 +17,13 @@ process Ivar {
     script:
 
     """
-    samtools mpileup $params.samtools_mpileup_args -d $params.samtools_mpileup_max_depth -A -Q 0 $bam | ivar consensus -p ${id}.consensus \
+    samtools mpileup $params.samtools_mpileup_args -d $params.samtools_mpileup_max_depth -A -B -Q 0 $bam | ivar consensus -p ${id}.consensus \
         -q $params.ivar_min_qual \
         -t $params.ivar_min_freq \
         -m $params.ivar_min_depth \
         -n $params.ivar_fill_char
     
-    samtools mpileup $params.samtools_mpileup_args -d $params.samtools_mpileup_max_depth -A -Q 0 $bam | ivar variants -p ${id}.variants \
+    samtools mpileup $params.samtools_mpileup_args -d $params.samtools_mpileup_max_depth -A -B -Q 0 $bam | ivar variants -p ${id}.variants \
         -q $params.ivar_min_qual \
         -t $params.ivar_min_freq \
         -m $params.ivar_min_depth \
