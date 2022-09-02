@@ -1,0 +1,3 @@
+[submodule "lineage-designation"]
+	path = lineage-designation
+	url = https://github.com/mpxv-lineages/lineage-designation

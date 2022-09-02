@@ -5,18 +5,21 @@
 vim: syntax=groovy
 -*- mode: groovy;-*-
 
-Monkeypox assembly workflow
+Monkeypox workflow fir Illumina PE from enriched sequencing:
+    
+    - Quality control
+    - Host depletion [optional]
+    - Consensus sequences: 3% and 75%
+    - Multiple sequence alignment (MSA)
+    - Phylogeny
+    - Report: QC, SNP distances, Variants, Phylogeny
 
 @authors: Eike Steinig, Mona Taouk
+@date: August 2022
 
 */
 
 nextflow.enable.dsl=2
-
-// Change comment
-
-// Basic workflow using alignment against Monkeypox reference
-// and subsequent assembly of mapped reads
 
 include { check_file } from './modules/utils'
 
@@ -24,80 +27,61 @@ include { Fastp } from './modules/fastp' addParams(
     stage: "quality_control",
     subdir: ""
 )
-include { MinimapAlignCigarPAF as MinimapReferenceAlignment } from './modules/minimap2' addParams(
-    stage: "reference_assembly",
-    subdir: "alignments"
+include { MinimapAlignSortedBam } from './modules/minimap2' addParams(
+    stage: "alignments",
+    subdir: ""
 )
-include { ExtractAligned } from './modules/mgp_tools' addParams(
-    stage: "reference_assembly",
-    subdir: "extractions",
-    extract_min_len: params.extract_min_qaln_len,
-    extract_min_mapq: params.extract_min_mapq
+include { Ivar as IvarHighFrequency }  from './modules/ivar' addParams(
+    stage: "consensus",
+    subdir: "high_freq",
+    ivar_min_freq: params.ivar_min_freq_high
 )
-include { Spades as ReferenceAssembly } from './modules/spades' addParams(
-    stage: "reference_assembly",
-    subdir: "assembly"
+include { Ivar as IvarLowFrequency } from './modules/ivar' addParams(
+    stage: "consensus",
+    subdir: "low_freq",
+    ivar_min_freq: params.ivar_min_freq_low
+)
+include { Coverage } from './modules/coverage' addParams(
+    stage: "coverage",
+    subdir: ""
 )
 
-// Aligns reads to outbreak reference and assembles aligned reads
-workflow reference_assembly {
+workflow host_depletion {
+    take: 
+        qc_reads
+    main:
+        host_index = check_file(params.host_index)
+        host_aligned_reads = MinimapHostAlignment(qc_reads[0], host_index)
+        // depleted_reads = DepleteAligned(host_aligned_reads[0], host_aligned_reads[1])
+    emit:
+        depleted_reads[0]
+    
+}
+
+// Read quality control, coverage data, consensus assembly, variant calls
+workflow qc_variants_assembly {
     take:
         reads
         reference
+        gff
     main:
         qc_reads = Fastp(reads)
-        aligned_reads = MinimapReferenceAlignment(qc_reads[0], reference)
-        extracted_reads = ExtractAligned(aligned_reads[0], aligned_reads[1])
-        assembly = ReferenceAssembly(extracted_reads[0])
-    emit:
-        assembly[0]
-        assembly[1]
-}
-
-include { MinimapAlignCigarPAF as MinimapHostAlignment } from './modules/minimap2' addParams(
-    stage: "denovo_assembly",
-    subdir: "host_alignments"
-)
-include { DepleteAligned } from './modules/mgp_tools' addParams(
-    stage: "denovo_assembly",
-    subdir: "host_depletion",
-    extract_min_len: params.host_deplete_min_qaln_len,
-    extract_min_mapq: params.host_deplete_min_mapq
-)
-include { Spades as DenovoAssembly } from './modules/spades' addParams(
-    stage: "denovo_assembly",
-    subdir: "assembly"
-)
-
-// Depletes human reads and assembles remainign reads
-workflow denovo_assembly {
-    take:
-        reads
-        host_index
-    main:
-        qc_reads = Fastp(reads)
-        host_aligned_reads = MinimapHostAlignment(qc_reads[0], host_index)
-        depleted_reads = DepleteAligned(host_aligned_reads[0], host_aligned_reads[1])
-        assembly = DenovoAssembly(depleted_reads[0]) 
-    emit:
-        assembly[0]
-        assembly[1]
+        aligned_reads = MinimapAlignSortedBam(qc_reads[0], reference)
+        coverage = Coverage(aligned_reads)
+        if (params.ivar_freq_low) {
+            ivar__low = IvarLowFrequency(aligned_reads, reference, gff)
+        }
+        if (params.ivar_freq_high) {
+            ivar_high = IvarHighFrequency(aligned_reads, reference, gff)
+        }
 }
 
 workflow {
 
     reads = channel.fromFilePairs(params.fastq, flat: true)
-
-    // Reference alignment and assembly of aligned reads
-    if (params.reference_assembly){
-        reference = check_file(params.reference)
-        reference_assembly(reads, reference)
-    }
-    // De novo assembly of host depleted reads
-    if (params.denovo_assembly){
-        host_index = check_file(params.host_index)
-        denovo_assembly(reads, host_index)
-    }
+    reference = check_file(params.reference)
+    gff = check_file(params.gff)
+    qc_variants_assembly(reads, reference, gff)
 
 }
 
