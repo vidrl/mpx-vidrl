@@ -27,7 +27,39 @@ ARTIC ONT amplicons (ARTIC Fieldinformatics):
 
 nextflow.enable.dsl=2
 
-include { check_file } from './modules/utils'
+
+include { validate_primer_scheme } from './modules/artic/utils'
+include { get_fastq_files } from './modules/artic/utils'
+include { check_file } from './modules/mpxv/utils'
+
+/*
+======================
+A R T I C P A R A M S
+======================
+*/
+
+include { ArticNanoq } from './modules/artic/artic' addParams(
+
+)
+include { ArticMinion } from './modules/artic/artic' addParams(
+    
+)
+include { ArticCovtobed } from './modules/artic/artic' addParams(
+    
+)
+include { ArticReport } from './modules/artic/artic' addParams(
+    
+)
+include { ArticParams } from './modules/artic/artic' addParams(
+    
+)
+
+/*
+======================
+T W I S T P A R A M S
+======================
+*/
+
 
 include { Fastp } from './modules/mpxv/fastp' addParams(
     stage: "quality_control",
@@ -83,6 +115,45 @@ workflow qc_variants_assembly {
 }
 
 workflow {
+
+
+    started = String.format('%tF %<tH:%<tM', java.time.LocalDateTime.now())
+
+    println("""
+    ====================
+    Pipeline parameters
+    ====================
+
+    outdir:           $params.outdir
+    version           $params.version
+    
+    ====================
+    ARTIC amplicon [ONT]
+    ====================
+
+    sample_sheet:     $params.sample_sheet
+    fastq_gather:     $params.fastq_gather
+    fastq_id:         $params.fastq_id
+    fastq_dir:        $params.fastq_dir
+    fastq_ext:        $params.fastq_ext
+    barcodes:         $params.barcodes
+
+    scheme_dir:       $params.scheme_dir
+    medaka_model:     $params.medaka_model
+    min_length:       $params.min_length
+    max_length:       $params.max_length
+    min_quality:      $params.min_quality
+    normalise:        $params.normalise
+    report_title:     $params.report_title
+
+    ===========================
+    TWIST enrichment [Illumina]
+    ===========================
+
+
+
+    """)
+
 
     reads = channel.fromFilePairs(params.fastq, flat: true)
     reference = check_file(params.reference)
