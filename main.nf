@@ -53,11 +53,8 @@ include { ArticMinion } from './modules/artic/artic' addParams(
 include { ArticParams } from './modules/artic/artic' addParams(
     outdir: params.artic.outdir,
     version: params.artic.version,
-    fastq_gather: params.artic.fastq_gather,
-    fastq_id: params.artic.fastq_id,
     fastq_dir: params.artic.fastq_dir,
     fastq_ext: params.artic.fastq_ext,
-    barcodes: params.artic.barcodes,
     sample_sheet: params.artic.sample_sheet,
     scheme_dir: params.artic.scheme_dir,
     medaka_model: params.artic.medaka_model,
