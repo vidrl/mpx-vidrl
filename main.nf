@@ -5,14 +5,20 @@
 vim: syntax=groovy
 -*- mode: groovy;-*-
 
-Monkeypox workflow fir Illumina PE from enriched sequencing:
-    
+Monkeypox workflow:
+
+Twist Illumina PE:
+
     - Quality control
     - Host depletion [optional]
-    - Consensus sequences: 3% and 75%
-    - Multiple sequence alignment (MSA)
-    - Phylogeny
-    - Report: QC, SNP distances, Variants, Phylogeny
+    - Consensus sequences: 60% and 90% frequency thresholds (intra-patient and inter-patient thresholds) [iVar]
+    - Variants: > 3% frequency [iVar]
+
+ARTIC ONT amplicons (ARTIC Fieldinformatics):
+
+    - Quality control
+    - ARTIC MinION
+    - Custom report
 
 @authors: Eike Steinig, Mona Taouk
 @date: August 2022
@@ -23,25 +29,25 @@ nextflow.enable.dsl=2
 
 include { check_file } from './modules/utils'
 
-include { Fastp } from './modules/fastp' addParams(
+include { Fastp } from './modules/mpxv/fastp' addParams(
     stage: "quality_control",
     subdir: ""
 )
-include { MinimapAlignSortedBam } from './modules/minimap2' addParams(
+include { MinimapAlignSortedBam } from './modules/mpxv/minimap2' addParams(
     stage: "alignments",
     subdir: ""
 )
-include { Ivar as IvarHighFrequency }  from './modules/ivar' addParams(
+include { Ivar as IvarHighFrequency }  from './modules/mpxv/ivar' addParams(
     stage: "consensus",
     subdir: "high_freq",
     ivar_min_freq: params.ivar_min_freq_high
 )
-include { Ivar as IvarLowFrequency } from './modules/ivar' addParams(
+include { Ivar as IvarLowFrequency } from './modules/mpxv/ivar' addParams(
     stage: "consensus",
     subdir: "low_freq",
     ivar_min_freq: params.ivar_min_freq_low
 )
-include { Coverage } from './modules/coverage' addParams(
+include { Coverage } from './modules/mpxv/coverage' addParams(
     stage: "coverage",
     subdir: ""
 )
