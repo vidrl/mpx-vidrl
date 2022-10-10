@@ -76,3 +76,4 @@ def variants(
         min_complete=0.95, min_depth=50, genbank_file=genbank, mask_file=mask, freq_alpha=freq_alpha
     )
 
+app()

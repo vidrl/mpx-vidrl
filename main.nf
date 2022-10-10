@@ -28,58 +28,152 @@ ARTIC ONT amplicons (ARTIC Fieldinformatics):
 nextflow.enable.dsl=2
 
 
+
+/*
+=======================
+A R T I C - P A R A M S
+=======================
+*/
+
+
 include { validate_primer_scheme } from './modules/artic/utils'
 include { get_fastq_files } from './modules/artic/utils'
-include { check_file } from './modules/mpxv/utils'
 
-/*
-======================
-A R T I C P A R A M S
-======================
-*/
-
+include { ArticCovtobed } from './modules/artic/artic'
+include { ArticReport } from './modules/artic/artic'
 include { ArticNanoq } from './modules/artic/artic' addParams(
-
+    min_length: params.artic.min_length,
+    max_length: params.artic.max_length,
+    min_quality: params.artic.min_quality
 )
 include { ArticMinion } from './modules/artic/artic' addParams(
-    
-)
-include { ArticCovtobed } from './modules/artic/artic' addParams(
-    
-)
-include { ArticReport } from './modules/artic/artic' addParams(
-    
+    normalise: params.artic.normalise,
+    medaka_model: params.medaka_model
 )
 include { ArticParams } from './modules/artic/artic' addParams(
-    
+    outdir: params.artic.outdir,
+    version: params.artic.version,
+    fastq_gather: params.artic.fastq_gather,
+    fastq_id: params.artic.fastq_id,
+    fastq_dir: params.artic.fastq_dir,
+    fastq_ext: params.artic.fastq_ext,
+    barcodes: params.artic.barcodes,
+    sample_sheet: params.artic.sample_sheet,
+    scheme_dir: params.artic.scheme_dir,
+    medaka_model: params.artic.medaka_model,
+    min_length: params.artic.min_length,
+    max_length: params.artic.max_length,
+    min_quality: params.artic.min_quality,
+    normalise: params.artic.normalise,
+    report_title: params.artic.report_title,
+    started: params.artic.workflow_started
 )
 
+workflow mpxv_artic {
+
+    started = String.format('%tF %<tH:%<tM', java.time.LocalDateTime.now())
+
+    println("""
+    ====================
+    Pipeline parameters
+    ====================
+
+    outdir:           $params.outdir
+    version           $params.version
+    
+    ====================
+    ARTIC amplicon [ONT]
+    ====================
+
+    sample_sheet:     $params.artic.sample_sheet
+    scheme_dir:       $params.artic.scheme_dir
+
+    fastq_dir:        $params.artic.fastq_dir
+    fastq_ext:        $params.artic.fastq_ext
+
+    medaka_model:     $params.artic.medaka_model
+    min_length:       $params.artic.min_length
+    max_length:       $params.artic.max_length
+    min_quality:      $params.artic.min_quality
+    normalise:        $params.artic.normalise
+    report_title:     $params.artic.report_title
+    """)
+
+    if (!params.artic.medaka_model){
+        println("Please provide a Medaka model (--medaka_model)")
+        System.exit(1)
+    }
+
+    if (!params.artic.scheme_dir){
+        println("Please provide a primer scheme directory (--scheme_dir)")
+        System.exit(1)
+    }
+
+    (primer_scheme, primer_bed) = validate_primer_scheme(params.artic.scheme_dir)
+
+    println("Primer scheme directory: ${primer_scheme[0]} (scheme: ${primer_scheme[1]})")
+    
+    fastq_files = get_fastq_files(
+        params.artic.fastq_gather, 
+        params.artic.fastq_id, 
+        params.artic.fastq_dir, 
+        params.artic.fastq_ext, 
+        params.artic.barcodes, 
+        params.artic.sample_sheet
+    )
+
+    artic_params = ArticParams(
+        started
+    )
+    artic_nanoq = ArticNanoq(
+        fastq_files
+    )
+    artic_medaka = ArticMinion(
+        artic_nanoq[0], 
+        primer_scheme
+    )
+    artic_coverage = ArticCovtobed(
+        artic_medaka[0]
+    )
+
+    artic_report = ArticReport(
+        artic_coverage | collect,
+        artic_medaka[1] | collect,
+        artic_nanoq[1] | collect,
+        primer_bed,
+        artic_params
+    )
+
+}
+
 /*
-======================
-T W I S T P A R A M S
-======================
+=======================
+T W I S T - P A R A M S
+=======================
 */
 
 
-include { Fastp } from './modules/mpxv/fastp' addParams(
+include { check_file } from './modules/mpxv/utils'
+
+include { Fastp } from './modules/mpxv/mpxv' addParams(
     stage: "quality_control",
     subdir: ""
 )
-include { MinimapAlignSortedBam } from './modules/mpxv/minimap2' addParams(
+include { MinimapAlignSortedBam } from './modules/mpxv/mpxv' addParams(
     stage: "alignments",
     subdir: ""
 )
-include { Ivar as IvarHighFrequency }  from './modules/mpxv/ivar' addParams(
+include { Ivar as IvarHighFrequency }  from './modules/mpxv/mpxv' addParams(
     stage: "consensus",
     subdir: "high_freq",
     ivar_min_freq: params.ivar_min_freq_high
 )
-include { Ivar as IvarLowFrequency } from './modules/mpxv/ivar' addParams(
+include { Ivar as IvarLowFrequency } from './modules/mpxv/mpxv' addParams(
     stage: "consensus",
     subdir: "low_freq",
     ivar_min_freq: params.ivar_min_freq_low
 )
-include { Coverage } from './modules/mpxv/coverage' addParams(
+include { Coverage } from './modules/mpxv/mpxv' addParams(
     stage: "coverage",
     subdir: ""
 )
@@ -114,7 +208,7 @@ workflow qc_variants_assembly {
         }
 }
 
-workflow {
+workflow mpxv_twist {
 
 
     started = String.format('%tF %<tH:%<tM', java.time.LocalDateTime.now())
@@ -127,29 +221,12 @@ workflow {
     outdir:           $params.outdir
     version           $params.version
     
-    ====================
-    ARTIC amplicon [ONT]
-    ====================
-
-    sample_sheet:     $params.sample_sheet
-    fastq_gather:     $params.fastq_gather
-    fastq_id:         $params.fastq_id
-    fastq_dir:        $params.fastq_dir
-    fastq_ext:        $params.fastq_ext
-    barcodes:         $params.barcodes
-
-    scheme_dir:       $params.scheme_dir
-    medaka_model:     $params.medaka_model
-    min_length:       $params.min_length
-    max_length:       $params.max_length
-    min_quality:      $params.min_quality
-    normalise:        $params.normalise
-    report_title:     $params.report_title
 
     ===========================
     TWIST enrichment [Illumina]
     ===========================
 
+    sample_sheet:     $params.artic.sample_sheet
 
 
     """)
