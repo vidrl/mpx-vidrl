@@ -48,7 +48,7 @@ include { ArticNanoq } from './modules/artic/artic' addParams(
 )
 include { ArticMinion } from './modules/artic/artic' addParams(
     normalise: params.artic.normalise,
-    medaka_model: params.medaka_model
+    medaka_model: params.artic.medaka_model
 )
 include { ArticParams } from './modules/artic/artic' addParams(
     outdir: params.artic.outdir,
@@ -151,7 +151,7 @@ T W I S T - P A R A M S
 
 
 include { check_file } from './modules/mpxv/utils'
-include { get_fastq_files as get_fastq_files_twist } from './modules/mpxv/utils'
+// include { get_fastq_files as get_fastq_files_twist } from './modules/mpxv/utils'
 
 include { Fastp } from './modules/mpxv/mpxv' addParams(
     stage: "quality_control",
@@ -239,10 +239,11 @@ workflow mpxv_twist {
 
     """)
 
+    gff = check_file(params.gff)
+    reference = check_file(params.reference)
 
     reads = channel.fromFilePairs(params.fastq, flat: true)
-    reference = check_file(params.reference)
-    gff = check_file(params.gff)
+
     qc_variants_assembly(reads, reference, gff)
 
 }
