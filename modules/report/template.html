@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+    <title>ARTIC-VIDRL</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.bokeh.org/bokeh/release/bokeh-2.3.3.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.bokeh.org/bokeh/release/bokeh-widgets-2.3.3.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.bokeh.org/bokeh/release/bokeh-tables-2.3.3.min.js" crossorigin="anonymous"></script>
+    <link href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <style>
+      .container {
+        max-width: 55%;
+        padding-top: 5%;
+      }
+      .header {
+       padding-bottom: 0.3em;
+       border-bottom-width: 0.3em;
+       border-bottom-style: solid;
+       border-bottom-color: #000;
+      }
+      .footer {
+       position: relative;
+       margin-top: 1em;
+       bottom: 0;
+       height: 60px;
+       padding-top: 3px;
+       border-top-width: 2px;
+       border-top-style: solid;
+       border-top-color: #000;
+      }
+      .config {
+        margin-top: 1em;
+        padding: 2em;
+        font-size: 12px; 
+        display: flex;
+      }
+      .sample {
+        display: flex;
+      }
+      .sample_data {
+        flex-basis: 30%;
+      }
+      .config_data {
+        flex-basis: 20%;
+      }
+      .config_text {
+        margin-right: 2em;
+      }
+      .config_plot {
+        margin-right: 2em;
+      }
+      .help {
+        font-size: 12px;
+        margin: 1em
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+      <h1>ARTIC-VIDRL Report{{ report_title }}</h1>
+      </div>
+      <div class="jumbotron config">
+
+        <div class="config_data">
+          <b>Version</b>: {{ version }}
+          <br>
+          <b>Started</b>: {{ start_time }}
+          <br>
+          <b>Report created</b>: {{ end_time }}
+          <br>
+          <b>Report coverage</b>: > {{ report_coverage }}x
+          <br>
+          <b>Samples</b>: {{ n_samples }}
+          <br>
+          <b>Barcodes selected</b>: {{ barcodes }}
+          <br>
+          <b>Min read length</b>: {{ min_length }}
+          <br>
+          <b>Max read length</b>: {{ max_length }}
+          <br>
+          <b>Min read quality</b>: {{ min_quality }}
+          <br>
+          <b>Normalise</b>: {{ normalise }}x
+          <br>
+          <b>Medaka model</b>: {{ medaka_model }}
+        </div>
+        <div class="config_data">
+          <b>ARTIC</b>: v1.2.2
+          <br>
+          <b>Medaka</b>: v1.0.3
+          <br>
+          <b>Minimap2</b>: v2.17
+          <br>
+          <b>Longshot</b>: v0.4.5
+          <br>
+          <b>Bcftools</b>: v1.10.2
+          <br>
+          <b>Nanoq</b>: v0.9.1
+          <br>
+          <b>Covtobed</b>: v1.3.5
+        </div>
+        <div class="config_data config_plot">
+          {{ plot_length_div|safe }}
+          {{ plot_length_script|safe }}
+        </div>
+        <div class="config_data config_plot">
+          {{ plot_qual_div|safe }}
+          {{ plot_qual_script|safe }}
+        </div>
+      </div>
+      <div class="help">
+        The graphs show depth of reference coverage per sample or barcode; the table lists masked regions and affected primers below ARTIC default settings (20x).
+      </div>
+      {% for sample in samples %}
+      <div class="sample" id="{{ sample.id }}">
+        <div class="sample_data">
+          {{ sample.plot_div|safe }}
+          {{ sample.plot_script|safe }}
+        </div>
+        <div class="sample_data">
+          {{ sample.table_div|safe }}
+          {{ sample.table_script|safe }}
+        </div>
+        <div class="sample_data">
+          {{ sample.stats_table_div|safe }}
+          {{ sample.stats_table_script|safe }}
+        </div>
+      </div>
+      {% endfor %}
+      <div class="footer">
+        <b>About</b>: This report was produced using <a href="https://github.com/esteinig/artic-vidrl">ARTIC-VIDRL</a>.
+        <b>Revision</b>: ARTIC-VIDRL v{{ version }} commit {{ commit }}.
+      </div>
+    </div>
+  </body>
+</html>

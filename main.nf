@@ -39,15 +39,15 @@ A R T I C - P A R A M S
 */
 
 
-include { validate_primer_scheme } from './modules/artic/utils'
-include { get_fastq_files as get_fastq_files_artic } from './modules/artic/utils'
+include { validate_primer_scheme } from './modules/utils'
+include { get_fastq_files as get_fastq_files_artic } from './modules/utils'
 
 
-include { DepleteHostSingle} from './modules/core/depletion' addParams(
+include { DepleteHostSingle} from './modules/depletion' addParams(
     stage: "host_depletion",
     subdir: ""
 )
-include { Minimap2HostSingle } from './modules/core/depletion' addParams(
+include { Minimap2HostSingle } from './modules/depletion' addParams(
     stage: "host_depletion",
     subdir: ""
 )
@@ -56,31 +56,31 @@ include { ArticCovtobed } from './modules/artic/artic'
 include { ArticReport } from './modules/artic/artic'
 
 include { ArticNanoq } from './modules/artic/artic' addParams(
-    min_length: params.artic.min_length,
-    max_length: params.artic.max_length,
-    min_quality: params.artic.min_quality
+    min_length: params.min_length,
+    max_length: params.max_length,
+    min_quality: params.min_quality
 )
 include { ArticMinion } from './modules/artic/artic' addParams(
-    normalise: params.artic.normalise,
-    medaka_model: params.artic.medaka_model
+    normalise: params.normalise,
+    medaka_model: params.medaka_model
 )
 include { ArticParams } from './modules/artic/artic' addParams(
-    outdir: params.artic.outdir,
-    version: params.artic.version,
+    outdir: params.outdir,
+    version: params.version,
     fastq_gather: null,
     fastq_id: null,
     barcodes: null,
-    fastq_dir: params.artic.fastq_dir,
-    fastq_ext: params.artic.fastq_ext,
-    sample_sheet: params.artic.sample_sheet,
-    scheme_dir: params.artic.scheme_dir,
-    medaka_model: params.artic.medaka_model,
-    min_length: params.artic.min_length,
-    max_length: params.artic.max_length,
-    min_quality: params.artic.min_quality,
-    normalise: params.artic.normalise,
-    report_title: params.artic.report_title,
-    started: params.artic.workflow_started
+    fastq_dir: params.fastq_dir,
+    fastq_ext: params.fastq_ext,
+    sample_sheet: params.sample_sheet,
+    scheme_dir: params.scheme_dir,
+    medaka_model: params.medaka_model,
+    min_length: params.min_length,
+    max_length: params.max_length,
+    min_quality: params.min_quality,
+    normalise: params.normalise,
+    report_title: params.report_title,
+    started: params.workflow_started
 )
 
 workflow mpxv_artic {
@@ -95,45 +95,48 @@ workflow mpxv_artic {
     outdir:           $params.outdir
     version           $params.version
     
+    deplete_host:     $params.deplete_host
+    host_index:       $params.host_index
+
     ====================
     ARTIC amplicon [ONT]
     ====================
 
-    sample_sheet:     $params.artic.sample_sheet
-    scheme_dir:       $params.artic.scheme_dir
+    sample_sheet:     $params.sample_sheet
+    scheme_dir:       $params.scheme_dir
 
-    fastq_dir:        $params.artic.fastq_dir
-    fastq_ext:        $params.artic.fastq_ext
+    fastq_dir:        $params.fastq_dir
+    fastq_ext:        $params.fastq_ext
 
-    medaka_model:     $params.artic.medaka_model
-    min_length:       $params.artic.min_length
-    max_length:       $params.artic.max_length
-    min_quality:      $params.artic.min_quality
-    normalise:        $params.artic.normalise
-    report_title:     $params.artic.report_title
+    medaka_model:     $params.medaka_model
+    min_length:       $params.min_length
+    max_length:       $params.max_length
+    min_quality:      $params.min_quality
+    normalise:        $params.normalise
+    report_title:     $params.report_title
     """)
 
-    if (!params.artic.medaka_model){
+    if (!params.medaka_model){
         println("Please provide a Medaka model (--medaka_model)")
         System.exit(1)
     }
 
-    if (!params.artic.scheme_dir){
+    if (!params.scheme_dir){
         println("Please provide a primer scheme directory (--scheme_dir)")
         System.exit(1)
     }
 
-    (primer_scheme, primer_bed) = validate_primer_scheme(params.artic.scheme_dir)
+    (primer_scheme, primer_bed) = validate_primer_scheme(params.scheme_dir)
 
     println("Primer scheme directory: ${primer_scheme[0]} (scheme: ${primer_scheme[1]})")
     
     fastq_files = get_fastq_files_artic(
         null, 
         null, 
-        params.artic.fastq_dir, 
-        params.artic.fastq_ext, 
+        params.fastq_dir, 
+        params.fastq_ext, 
         null, 
-        params.artic.sample_sheet
+        params.sample_sheet
     )
 
     artic_params = ArticParams(
@@ -179,15 +182,15 @@ T W I S T - P A R A M S
 */
 
 
-include { check_file } from './modules/mpxv/utils'
-include { get_samples_paired } from './modules/mpxv/utils'
+include { check_file } from './modules/utils'
+include { get_samples_paired } from './modules/utils'
 
 
-include { DepleteHostPaired } from './modules/core/depletion' addParams(
+include { DepleteHostPaired } from './modules/depletion' addParams(
     stage: "host_depletion",
     subdir: ""
 )
-include { Minimap2HostPaired } from './modules/core/depletion' addParams(
+include { Minimap2HostPaired } from './modules/depletion' addParams(
     stage: "host_depletion",
     subdir: ""
 )
@@ -239,6 +242,8 @@ workflow mpxv_twist {
     outdir:           $params.outdir
     version           $params.version
     
+    deplete_host:     $params.deplete_host
+    host_index:       $params.host_index
 
     ===========================
     TWIST enrichment [Illumina]
