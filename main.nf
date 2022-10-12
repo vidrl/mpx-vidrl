@@ -42,8 +42,19 @@ A R T I C - P A R A M S
 include { validate_primer_scheme } from './modules/artic/utils'
 include { get_fastq_files as get_fastq_files_artic } from './modules/artic/utils'
 
+
+include { DepleteHostSingle} from './modules/core/depletion' addParams(
+    stage: "host_depletion",
+    subdir: ""
+)
+include { Minimap2HostSingle } from './modules/core/depletion' addParams(
+    stage: "host_depletion",
+    subdir: ""
+)
+
 include { ArticCovtobed } from './modules/artic/artic'
 include { ArticReport } from './modules/artic/artic'
+
 include { ArticNanoq } from './modules/artic/artic' addParams(
     min_length: params.artic.min_length,
     max_length: params.artic.max_length,
@@ -128,11 +139,23 @@ workflow mpxv_artic {
     artic_params = ArticParams(
         started
     )
-    artic_nanoq = ArticNanoq(
+    reads = ArticNanoq(
         fastq_files
     )
+
+
+    if (params.deplete_host) {
+        host_index = check_file(params.host_index)
+        host_aligned_reads = Minimap2HostPaired(
+            reads[0], host_index
+        )
+        reads = DepleteHostPaired(
+            host_aligned_reads[0], host_aligned_reads[1]
+        )
+    }
+
     artic_medaka = ArticMinion(
-        artic_nanoq[0], 
+        reads[0], 
         primer_scheme
     )
     artic_coverage = ArticCovtobed(
@@ -221,8 +244,8 @@ workflow mpxv_twist {
     TWIST enrichment [Illumina]
     ===========================
 
-    sample_sheet:     $params.twist.sample_sheet
-    fastq_dir:        $params.twist.fastq_dir
+    sample_sheet:             $params.twist.sample_sheet
+    fastq_dir:                $params.twist.fastq_dir
 
     ivar_ref_gff:             $params.twist.ivar_ref_gff
     ivar_min_qual:            $params.twist.ivar_min_qual
