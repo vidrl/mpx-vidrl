@@ -148,10 +148,10 @@ workflow mpxv_artic {
 
     if (params.deplete_host) {
         host_index = check_file(params.host_index)
-        host_aligned_reads = Minimap2HostPaired(
+        host_aligned_reads = Minimap2HostSingle(
             artic_nanoq[0], host_index
         )
-        depleted = DepleteHostPaired(
+        depleted = DepleteHostSingle(
             host_aligned_reads[0], host_aligned_reads[1]
         )
         reads = depleted[0]
