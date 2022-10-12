@@ -141,7 +141,7 @@ workflow mpxv_artic {
     artic_params = ArticParams(
         started
     )
-    reads = ArticNanoq(
+    artic_nanoq = ArticNanoq(
         fastq_files
     )
 
@@ -149,15 +149,18 @@ workflow mpxv_artic {
     if (params.deplete_host) {
         host_index = check_file(params.host_index)
         host_aligned_reads = Minimap2HostPaired(
-            reads[0], host_index
+            artic_nanoq[0], host_index
         )
-        reads = DepleteHostPaired(
+        depleted = DepleteHostPaired(
             host_aligned_reads[0], host_aligned_reads[1]
         )
+        reads = depleted[0]
+    } else {
+        reads = artic_nanoq[0]
     }
 
     artic_medaka = ArticMinion(
-        reads[0], 
+        reads, 
         primer_scheme
     )
     artic_coverage = ArticCovtobed(
