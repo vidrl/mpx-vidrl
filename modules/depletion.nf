@@ -95,7 +95,7 @@ process DepleteHostSingle {
 
     script:
 
-    if (forward.size() > 0 && reverse.size() > 0) // guard against Needletail error on empty file
+    if (reads.size() > 0) // guard against Needletail error on empty file
         """
         mgp-tools deplete --alignment $alignment --input $reads --output ${id}_depleted.fastq --min-cov $params.deplete_min_cov --min-len $params.deplete_min_len --min-mapq $params.deplete_min_mapq --report ${id}.json
         """
