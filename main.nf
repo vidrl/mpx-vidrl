@@ -79,8 +79,7 @@ include { ArticParams } from './modules/artic/artic' addParams(
     max_length: params.max_length,
     min_quality: params.min_quality,
     normalise: params.normalise,
-    report_title: params.report_title,
-    started: params.workflow_started
+    report_title: params.report_title
 )
 
 workflow mpxv_artic {
