@@ -40,7 +40,7 @@ A R T I C - P A R A M S
 
 
 include { validate_primer_scheme } from './modules/artic/utils'
-include { get_fastq_files } from './modules/artic/utils'
+include { get_fastq_files as get_fastq_files_artic } from './modules/artic/utils'
 
 include { ArticCovtobed } from './modules/artic/artic'
 include { ArticReport } from './modules/artic/artic'
@@ -51,11 +51,14 @@ include { ArticNanoq } from './modules/artic/artic' addParams(
 )
 include { ArticMinion } from './modules/artic/artic' addParams(
     normalise: params.artic.normalise,
-    medaka_model: params.medaka_model
+    medaka_model: params.artic.medaka_model
 )
 include { ArticParams } from './modules/artic/artic' addParams(
     outdir: params.artic.outdir,
     version: params.artic.version,
+    fastq_gather: null,
+    fastq_id: null,
+    barcodes: null,
     fastq_dir: params.artic.fastq_dir,
     fastq_ext: params.artic.fastq_ext,
     sample_sheet: params.artic.sample_sheet,
@@ -113,12 +116,12 @@ workflow mpxv_artic {
 
     println("Primer scheme directory: ${primer_scheme[0]} (scheme: ${primer_scheme[1]})")
     
-    fastq_files = get_fastq_files(
-        params.artic.fastq_gather, 
-        params.artic.fastq_id, 
+    fastq_files = get_fastq_files_artic(
+        null, 
+        null, 
         params.artic.fastq_dir, 
         params.artic.fastq_ext, 
-        params.artic.barcodes, 
+        null, 
         params.artic.sample_sheet
     )
 
@@ -221,9 +224,17 @@ workflow mpxv_twist {
     sample_sheet:     $params.twist.sample_sheet
     fastq_dir:        $params.twist.fastq_dir
 
+    ivar_ref_gff:             $params.twist.ivar_ref_gff
+    ivar_min_qual:            $params.twist.ivar_min_qual
+    ivar_min_depth:           $params.twist.ivar_min_depth
+    ivar_fill_char:           $params.twist.ivar_fill_char
+    ivar_mpileup_args:        $params.twist.ivar_mpileup_args
+    ivar_mpileup_max_depth:   $params.twist.ivar_mpileup_max_depth
 
     """)
 
+    gff = check_file(params.gff)
+    reference = check_file(params.reference)
 
     reads = get_samples(params.twist.fastq_dir, params.twist.sample_sheet)
     
