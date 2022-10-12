@@ -1,4 +1,1 @@
 
-[submodule "modules"]
-	path = modules
-	url = git@github.com:vidrl/modules
