@@ -251,25 +251,25 @@ workflow mpxv_twist {
     TWIST enrichment [Illumina]
     ===========================
 
-    sample_sheet:             $params.twist.sample_sheet
-    fastq_dir:                $params.twist.fastq_dir
+    sample_sheet:             $params.sample_sheet
+    fastq_dir:                $paramsfastq_dir
 
-    ivar_ref_gff:             $params.twist.ivar_ref_gff
-    ivar_min_qual:            $params.twist.ivar_min_qual
-    ivar_min_depth:           $params.twist.ivar_min_depth
-    ivar_fill_char:           $params.twist.ivar_fill_char
-    ivar_mpileup_args:        $params.twist.ivar_mpileup_args
-    ivar_mpileup_max_depth:   $params.twist.ivar_mpileup_max_depth
+    ivar_ref_gff:             $params.ivar_ref_gff
+    ivar_min_qual:            $params.ivar_min_qual
+    ivar_min_depth:           $params.ivar_min_depth
+    ivar_fill_char:           $params.ivar_fill_char
+    ivar_mpileup_args:        $params.ivar_mpileup_args
+    ivar_mpileup_max_depth:   $params.ivar_mpileup_max_depth
 
     """)
 
     gff = check_file(params.gff)
     reference = check_file(params.reference)
 
-    reads = get_samples(params.twist.fastq_dir, params.twist.sample_sheet)
+    reads = get_samples(params.fastq_dir, params.sample_sheet)
     
-    reference = check_file(params.twist.reference)
-    gff = check_file(params.twist.gff)
+    reference = check_file(params.reference)
+    gff = check_file(params.gff)
 
     reads = MpxvFastp(reads)
 
