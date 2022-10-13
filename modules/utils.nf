@@ -165,8 +165,8 @@ def get_samples(fastq_dir, fastq_ext, sample_sheet, base_dir){
         } else {
             // If a base dir is specified, the sample sheet contains an additional
             // column `run_id` which specifies the directory in base dir that the 
-            // barcode dirs are contained in
-            barcode_dir = file("${base_dir}/${row.run_id}/${row.barcode}")
+            // fastq_pass and barcode dirs are contained in
+            barcode_dir = file("${base_dir}/${row.run_id}/fastq_pass/${row.barcode}")
         }
 
         if (!barcode_dir.exists()){
