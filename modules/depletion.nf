@@ -2,7 +2,7 @@
 
 process Minimap2HostPaired {
 
-    tag { "$id : $idx_name" }
+    tag { "$id" }
     label "minimap2_host"
 
     publishDir "$params.outdir/$params.stage/$params.subdir", mode: "symlink", pattern: "${id}.paf"
@@ -26,7 +26,7 @@ process Minimap2HostPaired {
 process DepleteHostPaired {
 
     label "mgp_tools"
-    tag { "$id : $id_idx" }
+    tag { "$id" }
 
     publishDir "$params.outdir/$params.stage/$params.subdir", mode: "copy", pattern: "${id}.json"
     publishDir "$params.outdir/$params.stage/$params.subdir/fastq", mode: "symlink", pattern: "${id}_depleted*.fastq"  // always to fastq sub-subdir
@@ -43,7 +43,7 @@ process DepleteHostPaired {
 
     if (forward.size() > 0 && reverse.size() > 0) // guard against Needletail error on empty file
         """
-        mgp-tools deplete --alignment $alignment --input $forward --input $reverse --output ${id}_depleted_1.fastq --output ${id}_depleted_2.fastq --min-cov $params.deplete_min_cov --min-len $params.deplete_min_len --min-mapq $params.deplete_min_mapq --report ${id}_${idx_name}.json
+        mgp-tools deplete --alignment $alignment --input $forward --input $reverse --output ${id}_depleted_1.fastq --output ${id}_depleted_2.fastq --min-cov $params.deplete_min_cov --min-len $params.deplete_min_len --min-mapq $params.deplete_min_mapq --report ${id}.json
         """
     else
         """

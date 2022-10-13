@@ -198,9 +198,14 @@ include { Minimap2HostPaired } from './modules/depletion' addParams(
 )
 
 
-include { MpxvFastp } from './modules/mpxv/mpxv'
-include { MpxvMinimapAlignSortedBam } from './modules/mpxv/mpxv'
-
+include { MpxvFastp } from './modules/mpxv/mpxv' addParams(
+    stage: "quality_control",
+    subdir: ""
+)
+include { MpxvMinimapAlignSortedBam } from './modules/mpxv/mpxv' addParams(
+    stage: "alignment",
+    subdir: ""
+)
 include { MpxvIvar as MpxvIvar90 }  from './modules/mpxv/mpxv' addParams(
     stage: "consensus",
     subdir: "90",
