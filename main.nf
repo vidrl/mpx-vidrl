@@ -116,11 +116,6 @@ workflow mpxv_artic {
     report_title:     $params.report_title
     """)
 
-    if (!params.medaka_model){
-        println("Please provide a Medaka model (--medaka_model)")
-        System.exit(1)
-    }
-
     if (!params.scheme_dir){
         println("Please provide a primer scheme directory (--scheme_dir)")
         System.exit(1)

@@ -207,7 +207,7 @@ def get_fastq_files(fastq_gather, fastq_id, fastq_dir, fastq_ext, barcodes, samp
             System.exit(1)
         }
         fastq_files = get_fastq_gather(fastq_gather)
-    } else if (fastq_dir) {
+    } else if (fastq_dir || base_dir) {
         println("Collecting read files with extension '$fastq_ext' in subdirectories of: $fastq_dir")
          if (!fastq_ext){
             println("Please provide a file extension to gather read files in subdirectories (--fastq_ext)")
