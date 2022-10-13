@@ -11,9 +11,9 @@ process ArticNanoq {
     tag { "$id" }
     label "artic_gather"
 
-    publishDir "${params.outdir}/nanoq", mode: "copy", pattern: "${id}.nanoq.json"  // publish all outputs as symlinks
-    publishDir "${params.outdir}/nanoq", mode: "symlink", pattern: "${id}.read_lengths.txt"  // publish all outputs as symlinks
-    publishDir "${params.outdir}/nanoq", mode: "symlink", pattern: "${id}.read_qualities.txt"  // publish all outputs as symlinks
+    publishDir "${params.outdir}/quality_control", mode: "copy", pattern: "${id}.nanoq.json"  // publish all outputs as symlinks
+    publishDir "${params.outdir}/quality_control", mode: "symlink", pattern: "${id}.read_lengths.txt"  // publish all outputs as symlinks
+    publishDir "${params.outdir}/quality_control", mode: "symlink", pattern: "${id}.read_qualities.txt"  // publish all outputs as symlinks
 
     input:
     tuple val(id), file(fastq_files)
@@ -40,10 +40,10 @@ process ArticMinion {
     tag { "$id" }
     label "artic_minion"
 
-    publishDir "${params.outdir}/artic/${id}_outputs", mode: "symlink", pattern: "${id}.*"  // publish all outputs as symlinks
-    publishDir "${params.outdir}/artic/", mode: "copy", pattern: "${id}.consensus.fasta"
-    publishDir "${params.outdir}/artic/", mode: "copy", pattern: "${id}.coverage_mask.txt"
-    publishDir "${params.outdir}/artic/", mode: "copy", pattern: "${id}.pass.vcf.gz"
+    publishDir "${params.outdir}/consensus/${id}_outputs", mode: "symlink", pattern: "${id}.*"  // publish all outputs as symlinks
+    publishDir "${params.outdir}/consensus/", mode: "copy", pattern: "${id}.consensus.fasta"
+    publishDir "${params.outdir}/consensus/", mode: "copy", pattern: "${id}.coverage_mask.txt"
+    publishDir "${params.outdir}/consensus/", mode: "copy", pattern: "${id}.pass.vcf.gz"
 
     input:
     tuple val(id), file(fastq)
@@ -62,12 +62,12 @@ process ArticMinion {
 
 }
 
-process ArticCovtobed {
+process ArticCoverage {
 
     tag { "$id" }
     label "artic_covtobed"
 
-    publishDir "${params.outdir}/coverage", mode: "symlink", pattern: "${id}.coverage.bed"
+    publishDir "${params.outdir}/coverage", mode: "symlink", pattern: "${id}.coverage.*"
 
 
     input:
@@ -79,6 +79,7 @@ process ArticCovtobed {
     script:
 
     """
+    samtools coverage $bam > ${id}.coverage.txt
     covtobed $reg_trimmed_bam > ${id}.coverage.bed
     """
 

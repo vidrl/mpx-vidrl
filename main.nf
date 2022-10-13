@@ -52,7 +52,7 @@ include { Minimap2HostSingle } from './modules/depletion' addParams(
     subdir: ""
 )
 
-include { ArticCovtobed } from './modules/artic/artic'
+include { ArticCoverage } from './modules/artic/artic'
 include { ArticReport } from './modules/artic/artic'
 
 include { ArticNanoq } from './modules/artic/artic' addParams(
@@ -163,7 +163,7 @@ workflow mpxv_artic {
         reads, 
         primer_scheme
     )
-    artic_coverage = ArticCovtobed(
+    artic_coverage = ArticCoverage(
         artic_medaka[0]
     )
 
