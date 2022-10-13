@@ -104,6 +104,7 @@ workflow mpxv_artic {
     sample_sheet:     $params.sample_sheet
     scheme_dir:       $params.scheme_dir
 
+    base_dir:         $params.base_dir
     fastq_dir:        $params.fastq_dir
     fastq_ext:        $params.fastq_ext
 
@@ -135,7 +136,8 @@ workflow mpxv_artic {
         params.fastq_dir, 
         params.fastq_ext, 
         null, 
-        params.sample_sheet
+        params.sample_sheet,
+        params.base_dir
     )
 
     artic_params = ArticParams(

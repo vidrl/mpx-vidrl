@@ -156,12 +156,18 @@ def get_fastq_dirs(fastq_dir, fastq_ext, barcode_str){
 
 // Sample sheet input
 
-def get_samples(fastq_dir, fastq_ext, sample_sheet){
+def get_samples(fastq_dir, fastq_ext, sample_sheet, base_dir){
 
     fastq_files = channel.fromPath(sample_sheet) | splitCsv(header:true) | map { row -> 
 
-        barcode_dir = file("${fastq_dir}/${row.barcode}")
-
+        if (!base_dir){
+            barcode_dir = file("${fastq_dir}/${row.barcode}")
+        } else {
+            // If a base dir is specified, the sample sheet contains an additional
+            // column `run_id` which specifies the directory in base dir that the 
+            // barcode dirs are contained in
+            barcode_dir = file("${base_dir}/${row.run_id}/${row.barcode}")
+        }
 
         if (!barcode_dir.exists()){
             println("Barcode directory does not exist: ${barcode_dir} -> ${row.sample_id}")
@@ -191,7 +197,7 @@ def get_samples(fastq_dir, fastq_ext, sample_sheet){
 }
 
 // Wrapper for getting fastq files
-def get_fastq_files(fastq_gather, fastq_id, fastq_dir, fastq_ext, barcodes, sample_sheet){
+def get_fastq_files(fastq_gather, fastq_id, fastq_dir, fastq_ext, barcodes, sample_sheet, base_dir){
 
 
     if (fastq_gather) {
@@ -210,7 +216,7 @@ def get_fastq_files(fastq_gather, fastq_id, fastq_dir, fastq_ext, barcodes, samp
         if (sample_sheet){
             println("Collecting read files from sample sheet: $sample_sheet")
             // Subset barcodes by sample sheet
-            fastq_files = get_samples(fastq_dir, fastq_ext, sample_sheet)
+            fastq_files = get_samples(fastq_dir, fastq_ext, sample_sheet, base_dir)
         } else {
             // Collect all barcodes
             fastq_files = get_fastq_dirs(fastq_dir, fastq_ext, barcodes)
