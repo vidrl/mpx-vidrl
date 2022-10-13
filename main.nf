@@ -252,7 +252,7 @@ workflow mpxv_twist {
     ===========================
 
     sample_sheet:             $params.sample_sheet
-    fastq_dir:                $paramsfastq_dir
+    fastq_dir:                $params.fastq_dir
 
     ivar_ref_gff:             $params.ivar_ref_gff
     ivar_min_qual:            $params.ivar_min_qual
