@@ -79,7 +79,7 @@ process ArticCoverage {
     script:
 
     """
-    samtools coverage $bam > ${id}.coverage.txt
+    samtools coverage $reg_trimmed_bam > ${id}.coverage.txt
     covtobed $reg_trimmed_bam > ${id}.coverage.bed
     """
 
