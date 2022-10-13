@@ -178,6 +178,8 @@ def get_samples(fastq_dir, fastq_ext, sample_sheet){
         if (files) {
             // println("Found sample directory: ${row.barcode} -> ${row.sample_id} (number of files: ${files.size()})")
             return tuple(row.sample_id, files) 
+        } else {
+            prinln("Could not find files for barcode ${row.barcode} with assigned ID: ${row.sample_id}")
         }
     
     }
@@ -228,11 +230,12 @@ def get_samples_paired(fastq_dir, sample_sheet){
 
     fastq_files = channel.fromPath(sample_sheet) | splitCsv(header:true) | map { row -> 
 
+        fastq_dir = file("${fastq_dir}")
         forward = file("${fastq_dir}/${row.forward}")
         reverse = file("${fastq_dir}/${row.reverse}")
 
-        if (!sample_dir.exists()){
-            println("Barcode directory does not exist: ${sample_dir} -> ${row.sample_id}")
+        if (!fastq_dir.exists()){
+            println("Fastq directory does not exist: ${fastq_dir}")
             return 
         }
 
@@ -249,7 +252,7 @@ def get_samples_paired(fastq_dir, sample_sheet){
     
     }
 
-    fastq_files | ifEmpty { exit 1, "Could not find any suitable subdirectories specified in sample sheet" }
+    fastq_files | ifEmpty { exit 1, "Could not find any suitable files specified in sample sheet" }
 
     return fastq_files
 
