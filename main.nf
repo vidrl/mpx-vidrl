@@ -264,13 +264,11 @@ workflow mpxv_twist {
 
     """)
 
-    gff = check_file(params.ivar_ref_gff)
-    reference = check_file(params.reference)
 
     reads = get_samples_paired(params.fastq_dir, params.sample_sheet)
     
     reference = check_file(params.reference)
-    gff = check_file(params.gff)
+    gff = check_file(params.ivar_ref_gff)
 
     reads = MpxvFastp(reads)
 
