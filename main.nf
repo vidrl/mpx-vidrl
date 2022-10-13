@@ -254,6 +254,7 @@ workflow mpxv_twist {
     sample_sheet:             $params.sample_sheet
     fastq_dir:                $params.fastq_dir
 
+    reference:                $params.reference
     ivar_ref_gff:             $params.ivar_ref_gff
     ivar_min_qual:            $params.ivar_min_qual
     ivar_min_depth:           $params.ivar_min_depth
@@ -263,7 +264,7 @@ workflow mpxv_twist {
 
     """)
 
-    gff = check_file(params.gff)
+    gff = check_file(params.ivar_ref_gff)
     reference = check_file(params.reference)
 
     reads = get_samples(params.fastq_dir, params.sample_sheet)
