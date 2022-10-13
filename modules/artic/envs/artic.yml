@@ -32,4 +32,4 @@ dependencies:
   - jinja2=3.0.3
   - bokeh=2.3.3
   - pip:
-    - artic-1.2.2r1-py3-none-any.whl
+    - artic-1.2.3r1-py3-none-any.whl
