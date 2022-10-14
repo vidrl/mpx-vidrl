@@ -244,7 +244,7 @@ def quality_control_consensus(results: Path, subdir: str = "high_freq", table_ou
 
     df = pandas.DataFrame(
         [sample.to_list() for sample in samples],
-        columns=["Sample", "Reads", "QC Reads", "Alignments", "Coverage", "Mean Depth", "Missing", "Completeness"]
+        columns=["Sample", "Reads", "QC reads", "Host reads", "Alignments", "Coverage", "Mean Depth", "Missing", "Completeness"]
     )
 
     return df, table
