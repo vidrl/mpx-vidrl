@@ -23,7 +23,7 @@ from Bio import SeqIO
 @dataclass
 class SampleFiles:
     assembly: Path
-    fastp: Path
+    qc_data: Path
     samtools: Path
     depletion: Path
 
@@ -52,6 +52,22 @@ class SampleQC:
             self.missing_sites,
             self.completeness
         ]
+
+
+def get_nanoq_data(file: Path) -> Tuple[int, int]:
+    """
+    Get nanoq data
+    """
+    if file is None:
+        return 0, 0
+
+    with file.open() as infile:
+        nanoq_data = json.load(infile)
+
+    total_reads = nanoq_data["reads"]
+    filtered = nanoq_data["filtered"]
+
+    return total_reads, total_reads-filtered
 
 
 def get_fastp_data(file: Path or None) -> Tuple[int, int]:
@@ -167,10 +183,8 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
         table.add_column(cname, justify=justify, no_wrap=False)
 
     for _, row in df.iterrows():
-        if row["Completeness"] >= 99.9:
+        if row["Completeness"] >= 95.0:
             row_color = "green1"
-        elif 95.0 <= row["Completeness"] < 99.9:
-            row_color = "pale_green1"
         elif 90.0 <= row["Completeness"] < 95.0:
             row_color = "yellow1"
         else:
@@ -185,7 +199,9 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
     return table
 
 
-def quality_control_consensus(results: Path, subdir: str = "high_freq", table_output: Path = None) -> Tuple[pandas.DataFrame, Table]:
+def quality_control_consensus(
+    results: Path, subdir: str or None = "high_freq", table_output: Path = None, ont: bool = False
+) -> Tuple[pandas.DataFrame, Table]:
 
     """ Create a quality control table from the coverage data and consensus sequences """
 
@@ -193,7 +209,7 @@ def quality_control_consensus(results: Path, subdir: str = "high_freq", table_ou
         sample.name.replace(".coverage.txt", ""): sample
         for sample in (results / "coverage").glob("*.coverage.txt")
     }
-    fastp_data = {
+    qc_data = {
         sample.name.replace(".json", ""): sample
         for sample in (results / "quality_control").glob("*.json")
     }
@@ -203,13 +219,17 @@ def quality_control_consensus(results: Path, subdir: str = "high_freq", table_ou
     }
 
     combined_files = {}
-    consensus_assemblies = results / "consensus" / subdir
+    if subdir is not None:
+        consensus_assemblies = results / "consensus" / subdir
+    else:
+        consensus_assemblies = results / "consensus"
+
     for assembly in consensus_assemblies.glob("*.consensus.fasta"):
         name = assembly.name.replace(".consensus.fasta", "")
         
         combined_files[name] = SampleFiles(
             assembly=assembly,
-            fastp=fastp_data.get(name),
+            qc_data=qc_data.get(name),
             samtools=coverage_data.get(name),
             depletion=depletion_data.get(name)
         )
@@ -219,7 +239,11 @@ def quality_control_consensus(results: Path, subdir: str = "high_freq", table_ou
 
     samples = []
     for sample, sample_files in combined_files.items():
-        all_reads, qc_reads = get_fastp_data(sample_files.fastp)
+        if ont:
+            all_reads, qc_reads = get_nanoq_data(sample_files.qc_data)
+        else:
+            all_reads, qc_reads = get_fastp_data(sample_files.qc_data)
+
         aligned_reads, coverage, mean_depth = get_samtools_data(sample_files.samtools)
         completeness, missing = get_consensus_assembly_data(sample_files.assembly)
         host_reads = get_host_reads(sample_files.depletion)
@@ -461,6 +485,7 @@ def get_variant_pop_summary(variants: pandas.DataFrame):
     cols_no_pop.insert(2, "POP_FREQ")
     var_data = var_data.reindex(columns=cols_no_pop)
     return var_data
+
 
 def annotate_masked_regions(variants: pandas.DataFrame, file: Path):
     """
