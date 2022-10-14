@@ -211,10 +211,16 @@ def quality_control_consensus(
         sample.name.replace(".coverage.txt", ""): sample
         for sample in (results / "coverage").glob("*.coverage.txt")
     }
-    qc_data = {
-        sample.name.replace(".json", ""): sample
-        for sample in (results / "quality_control").glob("*.json")
-    }
+    if ont:
+        qc_data = {
+            sample.name.replace(".nanoq.json", ""): sample
+            for sample in (results / "quality_control").glob("*.json")
+        }
+    else:
+        qc_data = {
+            sample.name.replace(".json", ""): sample
+            for sample in (results / "quality_control").glob("*.json")
+        }
     depletion_data = {
         sample.name.replace(".json", ""): sample
         for sample in (results / "host_depletion").glob("*.json")
@@ -267,7 +273,7 @@ def quality_control_consensus(
         table_freq_title = "".join([s.capitalize() for s in subdir.split("_")])
     else:
         table_freq_title = "ONT"
-        
+
     table = create_rich_table(samples, title=f"Monkeypox QC ({table_freq_title})", table_output=table_output)
 
     rprint(table)
