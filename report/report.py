@@ -133,9 +133,9 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
             sample_number = sample_content[1]
 
             if patient_id not in patient_samples.keys():
-                patient_samples[patient_id] = [(int(sample_number), row.tolist())]
+                patient_samples[patient_id] = [(sample_number, row.tolist())]
             else:
-                patient_samples[patient_id].append((int(sample_number), row.tolist()))
+                patient_samples[patient_id].append((sample_number, row.tolist()))
 
         sorted_patient_samples = {}
         for patient_id, patient_data in patient_samples.items():
