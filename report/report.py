@@ -149,7 +149,7 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
                 "Sample",
                 "Reads",
                 "QC reads",
-                "Host reads"
+                "Host reads",
                 "Alignments",
                 "Coverage",
                 "Mean depth",
