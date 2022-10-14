@@ -64,10 +64,10 @@ def get_nanoq_data(file: Path) -> Tuple[int, int]:
     with file.open() as infile:
         nanoq_data = json.load(infile)
 
-    total_reads = nanoq_data["reads"]
+    after_filtered = nanoq_data["reads"]
     filtered = nanoq_data["filtered"]
 
-    return total_reads, filtered
+    return after_filtered+filtered, after_filtered
 
 
 def get_fastp_data(file: Path or None) -> Tuple[int, int]:
