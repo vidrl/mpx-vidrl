@@ -54,10 +54,13 @@ class SampleQC:
         ]
 
 
-def get_fastp_data(file: Path) -> Tuple[int, int]:
+def get_fastp_data(file: Path or None) -> Tuple[int, int]:
     """
     Get fastp data
     """
+    if file is None:
+        return 0, 0
+
     with file.open() as infile:
         fastp_data = json.load(infile)
 
@@ -67,10 +70,13 @@ def get_fastp_data(file: Path) -> Tuple[int, int]:
     return all_reads, qc_reads  # Illumina PE
 
 
-def get_host_reads(file: Path) -> int:
+def get_host_reads(file: Path or None) -> int:
     """
     Get mgp-tools deplete data
     """
+    if file is None:
+        return 0
+
     with file.open() as infile:
         mgpt_data = json.load(infile)
 
@@ -108,7 +114,10 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
 
     df = pandas.DataFrame(
         [sample.to_list() for sample in samples],
-        columns=["Sample", "Reads", "QC Reads", "Alignments", "Coverage", "Mean Depth", "Missing", "Completeness"]
+        columns=[
+            "Sample", "Reads", "QC reads", "Host reads",
+            "Alignments", "Coverage", "Mean Depth", "Missing", "Completeness"
+        ]
     )
 
     if not patient_id:
@@ -120,8 +129,8 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
         for i, row in df.iterrows():
             sample_id = row["Sample"]
             sample_content = sample_id.split("_")
-            patient_id = sample_content[1]
-            sample_number = sample_content[2]
+            patient_id = sample_content[0]
+            sample_number = sample_content[1]
 
             if patient_id not in patient_samples.keys():
                 patient_samples[patient_id] = [(int(sample_number), row.tolist())]
@@ -140,7 +149,7 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
                 "Sample",
                 "Reads",
                 "QC reads",
-                "Human reads"
+                "Host reads"
                 "Alignments",
                 "Coverage",
                 "Mean depth",
