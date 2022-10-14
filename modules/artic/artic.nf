@@ -75,6 +75,7 @@ process ArticCoverage {
 
     output:
     file("${id}.coverage.bed")
+    file("${id}.coverage.txt")
 
     script:
 

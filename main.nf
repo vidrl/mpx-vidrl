@@ -165,7 +165,7 @@ workflow mpxv_artic {
     )
 
     artic_report = ArticReport(
-        artic_coverage | collect,
+        artic_coverage[0] | collect,
         artic_medaka[1] | collect,
         artic_nanoq[1] | collect,
         primer_bed,
