@@ -100,7 +100,7 @@ def get_host_reads(file: Path or None, ont: bool) -> int:
     if not ont:
         reverse_depleted = mgpt_data["reads"][1]["depleted"]
         reads = reads+reverse_depleted
-        
+
     return reads
 
 
@@ -248,7 +248,7 @@ def quality_control_consensus(
 
         aligned_reads, coverage, mean_depth = get_samtools_data(sample_files.samtools)
         completeness, missing = get_consensus_assembly_data(sample_files.assembly)
-        host_reads = get_host_reads(sample_files.depletion)
+        host_reads = get_host_reads(sample_files.depletion, ont=ont)
 
         qc = SampleQC(
             name=sample,
