@@ -86,7 +86,7 @@ def get_fastp_data(file: Path or None) -> Tuple[int, int]:
     return all_reads, qc_reads  # Illumina PE
 
 
-def get_host_reads(file: Path or None) -> int:
+def get_host_reads(file: Path or None, ont: bool) -> int:
     """
     Get mgp-tools deplete data
     """
@@ -96,10 +96,12 @@ def get_host_reads(file: Path or None) -> int:
     with file.open() as infile:
         mgpt_data = json.load(infile)
 
-    forward_depleted = mgpt_data["reads"][0]["depleted"]
-    reverse_depleted = mgpt_data["reads"][1]["depleted"]
-
-    return forward_depleted+reverse_depleted
+    reads = mgpt_data["reads"][0]["depleted"]
+    if not ont:
+        reverse_depleted = mgpt_data["reads"][1]["depleted"]
+        reads = reads+reverse_depleted
+        
+    return reads
 
 
 def get_samtools_data(file: Path) -> Tuple[int, float, float]:
