@@ -1,6 +1,6 @@
 import typer 
 from pathlib import Path
-from .report import quality_control_consensus, snp_distance, variant_table
+from .report import quality_control_consensus, variant_table
 
 app = typer.Typer(add_completion=False)
 
@@ -17,25 +17,13 @@ def quality_control(
         "qc_table.tsv", help="QC table output file"
     ),
     subdir: str = typer.Option(
-        "high_freq", help="Consensus sub directory: low_freq | high_freq"
+        "90", help="Consensus sub directory"
     )
 ):
     """
-    QC
+    Quality control data
     """
     quality_control_consensus(results=results, subdir=subdir, table_output=output)
-
-
-@report.command()
-def snp_dist(
-    dist: Path = typer.Argument(
-        ..., help="Pairwise SNP distance matrix in long form e.g. from PSDM"
-    )
-):
-    """
-    SNP distances
-    """
-    snp_distance(dist=dist)
 
 
 @report.command()

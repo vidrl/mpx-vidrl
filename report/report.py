@@ -25,6 +25,7 @@ class SampleFiles:
     assembly: Path
     fastp: Path
     samtools: Path
+    depletion: Path
 
 
 @dataclass
@@ -32,6 +33,7 @@ class SampleQC:
     name: str
     reads: Optional[int]
     qc_reads: Optional[int]
+    human_reads: Optional[int]
     aligned_reads: Optional[int]
     coverage: Optional[float]
     mean_depth: Optional[float]
@@ -43,6 +45,7 @@ class SampleQC:
             self.name,
             self.reads,
             self.qc_reads,
+            self.human_reads,
             self.aligned_reads,
             self.coverage,
             self.mean_depth,
@@ -53,7 +56,7 @@ class SampleQC:
 
 def get_fastp_data(file: Path) -> Tuple[int, int]:
     """
-    Get fastp data - divive by two for paired-end reads
+    Get fastp data
     """
     with file.open() as infile:
         fastp_data = json.load(infile)
@@ -62,6 +65,19 @@ def get_fastp_data(file: Path) -> Tuple[int, int]:
     qc_reads = fastp_data["summary"]["after_filtering"]["total_reads"]
 
     return all_reads, qc_reads  # Illumina PE
+
+
+def get_host_reads(file: Path) -> int:
+    """
+    Get mgp-tools deplete data
+    """
+    with file.open() as infile:
+        mgpt_data = json.load(infile)
+
+    forward_depleted = mgpt_data["reads"][0]["depleted"]
+    reverse_depleted = mgpt_data["reads"][1]["depleted"]
+
+    return forward_depleted+reverse_depleted
 
 
 def get_samtools_data(file: Path) -> Tuple[int, float, float]:
@@ -123,10 +139,11 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Tr
             columns=[
                 "Sample",
                 "Reads",
-                "QC Reads",
+                "QC reads",
+                "Human reads"
                 "Alignments",
                 "Coverage",
-                "Mean Depth",
+                "Mean depth",
                 "Missing (N)",
                 "Completeness"
             ]
@@ -171,6 +188,10 @@ def quality_control_consensus(results: Path, subdir: str = "high_freq", table_ou
         sample.name.replace(".json", ""): sample
         for sample in (results / "quality_control").glob("*.json")
     }
+    depletion_data = {
+        sample.name.replace(".json", ""): sample
+        for sample in (results / "host_depletion").glob("*.json")
+    }
 
     combined_files = {}
     consensus_assemblies = results / "consensus" / subdir
@@ -181,7 +202,7 @@ def quality_control_consensus(results: Path, subdir: str = "high_freq", table_ou
             assembly=assembly,
             fastp=fastp_data.get(name),
             samtools=coverage_data.get(name),
-
+            depletion=depletion_data.get(name)
         )
 
     if not combined_files:
@@ -192,11 +213,13 @@ def quality_control_consensus(results: Path, subdir: str = "high_freq", table_ou
         all_reads, qc_reads = get_fastp_data(sample_files.fastp)
         aligned_reads, coverage, mean_depth = get_samtools_data(sample_files.samtools)
         completeness, missing = get_consensus_assembly_data(sample_files.assembly)
+        host_reads = get_host_reads(sample_files.depletion)
 
         qc = SampleQC(
             name=sample,
             reads=all_reads,
             qc_reads=qc_reads,
+            human_reads=host_reads,
             aligned_reads=aligned_reads,
             coverage=coverage,
             mean_depth=mean_depth,
@@ -216,60 +239,6 @@ def quality_control_consensus(results: Path, subdir: str = "high_freq", table_ou
     )
 
     return df, table
-
-
-@dataclass
-class SampleDistance:
-    patient: str
-    samples: int
-    within_median: float
-
-
-def snp_distance(dist: Path):
-    """
-    Compute median SNP distance within and between patients
-    Sample identifiers conform to Mona's scheme: MPX_A_1 etc.
-    """
-
-    dist_mat = pandas.read_csv(dist, index_col=0)
-
-    # Replace column and index names with extracted patient identifier
-
-    patients = [c.split(".")[0].replace("Consensus_", "").split("_")[1] for c in dist_mat.columns]
-
-    dist_mat.index = patients
-    dist_mat.columns = patients
-
-    dist_upper = dist_mat.mask(np.triu(np.ones(dist_mat.shape, dtype=np.bool_)))
-
-    melted = pandas.DataFrame(dist_upper).reset_index().melt('index')
-
-    within_patients = melted[melted['index'] == melted['variable']].dropna()
-    between_patients = melted[melted['index'] != melted['variable']].dropna()
-
-    # Within patient with only single isolate comparison to itself is already NaN and excluded
-
-    df = pandas.concat([within_patients, between_patients])
-    df['comparison'] = ['within' for _ in within_patients.iterrows()] + ['between' for _ in between_patients.iterrows()]\
-    
-    df.columns = ['patient1', 'patient2', 'distance', 'comparison']
-
-    fig, ax = plt.subplots(
-        nrows=1, ncols=1, figsize=(14, 10)
-    )
-    
-    sns.set_style('white')
-
-    p = sns.boxplot(x="distance", y="comparison", data=df, palette="colorblind", linewidth=2.5, ax=ax)
-    sns.stripplot(x="distance", y="comparison", data=df, color="darkgray", alpha=0.8, jitter=0.3, size=8, ax=ax)
-
-    p.set_xticks(range(int(df['distance'].max())+1))
-    p.set_xticklabels(range(int(df['distance'].max())+1))
-    plt.xlabel(f"\nSNP distance", fontsize=12, fontweight="bold")
-    plt.ylabel(f"Patient isolates\n", fontsize=12, fontweight="bold")
-    plt.tight_layout()
-    
-    fig.savefig("test.png")
 
 
 def variant_table(
