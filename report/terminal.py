@@ -17,13 +17,16 @@ def quality_control(
         "qc_table.tsv", help="QC table output file"
     ),
     subdir: str = typer.Option(
-        "90", help="Consensus sub directory"
-    )
+        None, help="Consensus sub directory"
+    ),
+    ont: bool = typer.Option(
+        False, help="Output directory is from ARTIC"
+    ),
 ):
     """
     Quality control data
     """
-    quality_control_consensus(results=results, subdir=subdir, table_output=output)
+    quality_control_consensus(results=results, subdir=subdir, table_output=output, ont=ont)
 
 
 @report.command()
