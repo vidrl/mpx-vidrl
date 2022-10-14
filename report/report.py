@@ -263,7 +263,11 @@ def quality_control_consensus(
         )
         samples.append(qc)
 
-    table_freq_title = "".join([s.capitalize() for s in subdir.split("_")])
+    if subdir is not None:
+        table_freq_title = "".join([s.capitalize() for s in subdir.split("_")])
+    else:
+        table_freq_title = "ONT"
+        
     table = create_rich_table(samples, title=f"Monkeypox QC ({table_freq_title})", table_output=table_output)
 
     rprint(table)
