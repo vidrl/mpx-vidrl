@@ -19,7 +19,7 @@ setup(
     ],
     entry_points="""
     [console_scripts]
-    mpx=mpx_assembly.terminal:app
+    mpx=report.terminal:app
     """,
     version="0.2.0",
     license="MIT",
