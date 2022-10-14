@@ -67,7 +67,7 @@ def get_nanoq_data(file: Path) -> Tuple[int, int]:
     total_reads = nanoq_data["reads"]
     filtered = nanoq_data["filtered"]
 
-    return total_reads, total_reads-filtered
+    return total_reads, filtered
 
 
 def get_fastp_data(file: Path or None) -> Tuple[int, int]:
