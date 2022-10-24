@@ -57,7 +57,7 @@ process ArticMinion {
     script:
 
     """
-    artic minion --normalise $params.normalise --threads $task.cpus --read-file $fastq --medaka --medaka-model ${params.medaka_model} --skip-muscle --scheme-directory ${scheme_base_dir} ${scheme_dir} ${id}
+    artic minion --normalise $params.normalise --threads $task.cpus --read-file $fastq --medaka --medaka-model ${params.medaka_model} --skip-muscle --min-var-depth ${params.medaka_min_depth} --scheme-directory ${scheme_base_dir} ${scheme_dir} ${id}
     """
 
 }
