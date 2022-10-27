@@ -595,12 +595,12 @@ def annotate_cds(variants: pandas.DataFrame, genbank_file: Path):
 
     print(cds_df.index.to_list())
 
-
     variants_cds = variants.join(cds_df)
 
     print(variants_cds[variants_cds["POS"] == 22469])
 
     return variants_cds
+
 
 def extract_feature_qualifiers(feature):
 

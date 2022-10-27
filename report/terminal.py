@@ -43,6 +43,12 @@ def variants(
         genbank: Path = typer.Option(
             None, help="Genbank file of reference to use for additional variant annotations"
         ),
+        min_completeness: float = typer.Option(
+            95.0, help="Minimum completeness threshold to consider QC PASS"
+        ),
+        min_depth: float = typer.Option(
+            0.0, help="Minimum depth threshold to consider QC PASS"
+        ),
         mask: Path = typer.Option(
             None, help="Mask file (TSV) to annotate variants with masked regions"
         ),
@@ -64,7 +70,8 @@ def variants(
 
     variant_table(
         results=results, subdir=subdir, variant_pass=variant_pass, low_freq_depth=low_freq_depth,
-        min_complete=0.95, min_depth=50, genbank_file=genbank, mask_file=mask, freq_alpha=freq_alpha
+        min_complete=min_completeness/100, min_depth=min_depth, genbank_file=genbank, mask_file=mask,
+        freq_alpha=freq_alpha
     )
 
 app()
