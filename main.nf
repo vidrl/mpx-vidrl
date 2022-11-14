@@ -109,11 +109,14 @@ workflow mpxv_artic {
     fastq_ext:        $params.fastq_ext
 
     medaka_model:     $params.medaka_model
+    medaka_min_depth: $params.medaka_min_depth
+
     min_length:       $params.min_length
     max_length:       $params.max_length
     min_quality:      $params.min_quality
     normalise:        $params.normalise
     report_title:     $params.report_title
+    
     """)
 
     if (!params.scheme_dir){

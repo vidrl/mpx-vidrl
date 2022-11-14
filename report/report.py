@@ -128,7 +128,7 @@ def get_consensus_assembly_data(file: Path) -> Tuple[float or None, int]:
     return completeness, ncount
 
 
-def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = True, table_output: Path = None):
+def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = False, table_output: Path = None):
 
     df = pandas.DataFrame(
         [sample.to_list() for sample in samples],
@@ -595,12 +595,12 @@ def annotate_cds(variants: pandas.DataFrame, genbank_file: Path):
 
     print(cds_df.index.to_list())
 
-
     variants_cds = variants.join(cds_df)
 
     print(variants_cds[variants_cds["POS"] == 22469])
 
     return variants_cds
+
 
 def extract_feature_qualifiers(feature):
 
