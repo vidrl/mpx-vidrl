@@ -128,7 +128,7 @@ def get_consensus_assembly_data(file: Path) -> Tuple[float or None, int]:
     return completeness, ncount
 
 
-def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = False, table_output: Path = None):
+def create_rich_table(samples: List[SampleQC], title: str, table_output: Path = None):
 
     df = pandas.DataFrame(
         [sample.to_list() for sample in samples],
@@ -138,43 +138,7 @@ def create_rich_table(samples: List[SampleQC], title: str, patient_id: bool = Fa
         ]
     )
 
-    if not patient_id:
-        df = df.sort_values(["Sample", "Completeness", "Coverage", "Mean Depth"])
-    else:
-        # Sort first by sample patient identifier then number of that patient sample
-        # must comply with Mona's format: ID_{Patient}_{Number} e.g. MPX_A_1 and MPX_A_2
-        patient_samples = {}
-        for i, row in df.iterrows():
-            sample_id = row["Sample"]
-            sample_content = sample_id.split("_")
-            patient_id = sample_content[0]
-            sample_number = sample_content[1]
-
-            if patient_id not in patient_samples.keys():
-                patient_samples[patient_id] = [(sample_number, row.tolist())]
-            else:
-                patient_samples[patient_id].append((sample_number, row.tolist()))
-
-        sorted_patient_samples = {}
-        for patient_id, patient_data in patient_samples.items():
-            sorted_patient_samples[patient_id] = sorted(patient_data, key=lambda x: x[0])
-
-        sorted_samples = dict(sorted(sorted_patient_samples.items()))  # Python 3.7+
-
-        df = pandas.DataFrame(
-            [sample[1] for _, data in sorted_samples.items() for sample in data],
-            columns=[
-                "Sample",
-                "Reads",
-                "QC reads",
-                "Host reads",
-                "Alignments",
-                "Coverage",
-                "Mean depth",
-                "Missing (N)",
-                "Completeness"
-            ]
-        )
+    df = df.sort_values(["Sample", "Completeness", "Coverage", "Mean Depth"])
 
     table = Table(title=title)
     for cname in df.columns:
