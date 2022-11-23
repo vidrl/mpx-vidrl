@@ -39,11 +39,11 @@ include { validate_primer_scheme as validate_primer_scheme_artic } from './modul
 include { get_fastq_files as get_fastq_files_artic } from './modules/utils'
 
 
-include { DepleteHostSingle } from './modules/depletion' addParams(
+include { DepleteHostSingle as DepleteHostSingleArtic } from './modules/depletion' addParams(
     stage: "host_depletion",
     subdir: ""
 )
-include { Minimap2HostSingle } from './modules/depletion' addParams(
+include { Minimap2HostSingle as Minimap2HostSingleArtic } from './modules/depletion' addParams(
     stage: "host_depletion",
     subdir: ""
 )
@@ -144,10 +144,10 @@ workflow mpxv_artic {
 
     if (params.deplete_host) {
         host_index = check_file(params.host_index)
-        host_aligned_reads = Minimap2HostSingle(
+        host_aligned_reads = DepleteHostSingleArtic(
             artic_nanoq[0], host_index
         )
-        depleted = DepleteHostSingle(
+        depleted = DepleteHostSingleArtic(
             host_aligned_reads[0], host_aligned_reads[1]
         )
         reads = depleted[0]
@@ -185,11 +185,11 @@ include { get_fastq_files as get_fastq_files_ont } from './modules/utils'
 
 
 
-include { DepleteHostSingle } from './modules/depletion' addParams(
+include { DepleteHostSingle as DepleteHostSingleOnt } from './modules/depletion' addParams(
     stage: "host_depletion",
     subdir: ""
 )
-include { Minimap2HostSingle } from './modules/depletion' addParams(
+include { Minimap2HostSingle as Minimap2HostSingleOnt } from './modules/depletion' addParams(
     stage: "host_depletion",
     subdir: ""
 )
@@ -306,10 +306,10 @@ workflow mpxv_ont {
 
     if (params.deplete_host) {
         host_index = check_file(params.host_index)
-        host_aligned_reads = Minimap2HostSingle(
+        host_aligned_reads = Minimap2HostSingleOnt(
             qc_files[0], host_index
         )
-        depleted = DepleteHostSingle(
+        depleted = DepleteHostSingleOnt(
             host_aligned_reads[0], host_aligned_reads[1]
         )
         reads = depleted[0]
