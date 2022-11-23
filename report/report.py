@@ -166,7 +166,7 @@ def create_rich_table(samples: List[SampleQC], title: str, table_output: Path = 
 
 
 def quality_control_consensus(
-    results: Path, subdir: str or None = "high_freq", table_output: Path = None, ont: bool = False
+    results: Path, subdir: str or None = "high_freq", table_output: Path = None, ont: bool = False, ont_ivar: bool = False
 ) -> Tuple[pandas.DataFrame, Table]:
 
     """ Create a quality control table from the coverage data and consensus sequences """
@@ -175,7 +175,7 @@ def quality_control_consensus(
         sample.name.replace(".coverage.txt", ""): sample
         for sample in (results / "coverage").glob("*.coverage.txt")
     }
-    if ont:
+    if ont or ont_ivar:
         qc_data = {
             sample.name.replace(".nanoq.json", ""): sample
             for sample in (results / "quality_control").glob("*.json")
@@ -211,7 +211,7 @@ def quality_control_consensus(
 
     samples = []
     for sample, sample_files in combined_files.items():
-        if ont:
+        if ont or ont_ivar:
             all_reads, qc_reads = get_nanoq_data(sample_files.qc_data)
         else:
             all_reads, qc_reads = get_fastp_data(sample_files.qc_data)
