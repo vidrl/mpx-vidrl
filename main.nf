@@ -35,7 +35,7 @@ A R T I C - P A R A M S
 */
 
 
-include { validate_primer_scheme } from './modules/utils'
+include { validate_primer_scheme as validate_primer_scheme_artic } from './modules/utils'
 include { get_fastq_files as get_fastq_files_artic } from './modules/utils'
 
 
@@ -120,7 +120,7 @@ workflow mpxv_artic {
         System.exit(1)
     }
 
-    (primer_scheme, primer_bed) = validate_primer_scheme(params.scheme_dir)
+    (primer_scheme, primer_bed) = validate_primer_scheme_artic(params.scheme_dir)
 
     println("Primer scheme directory: ${primer_scheme[0]} (scheme: ${primer_scheme[1]})")
     
@@ -180,7 +180,7 @@ O N T - I V A R - P A R A M S
 */
 
 
-include { validate_primer_scheme } from './modules/utils'
+include { validate_primer_scheme as validate_primer_scheme_ont } from './modules/utils'
 include { get_fastq_files as get_fastq_files_ont } from './modules/utils'
 
 
@@ -285,7 +285,7 @@ workflow mpxv_ont {
         System.exit(1)
     }
 
-    (primer_scheme, primer_bed) = validate_primer_scheme(params.scheme_dir)
+    (primer_scheme, primer_bed) = validate_primer_scheme_ont(params.scheme_dir)
 
     println("Primer scheme directory: ${primer_scheme[0]} (scheme: ${primer_scheme[1]})")
     
