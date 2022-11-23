@@ -29,10 +29,6 @@ nextflow.enable.dsl=2
 
 
 /*
-
-*/
-
-/*
 =======================
 A R T I C - P A R A M S
 =======================
@@ -43,7 +39,7 @@ include { validate_primer_scheme } from './modules/utils'
 include { get_fastq_files as get_fastq_files_artic } from './modules/utils'
 
 
-include { DepleteHostSingle} from './modules/depletion' addParams(
+include { DepleteHostSingle } from './modules/depletion' addParams(
     stage: "host_depletion",
     subdir: ""
 )
@@ -176,6 +172,165 @@ workflow mpxv_artic {
     )
 
 }
+
+/*
+==============================
+O N T - I V A R - P A R A M S
+==============================
+*/
+
+
+include { validate_primer_scheme } from './modules/utils'
+include { get_fastq_files as get_fastq_files_ont } from './modules/utils'
+
+
+
+include { DepleteHostSingle } from './modules/depletion' addParams(
+    stage: "host_depletion",
+    subdir: ""
+)
+include { Minimap2HostSingle } from './modules/depletion' addParams(
+    stage: "host_depletion",
+    subdir: ""
+)
+
+
+include { ArticNanoq as OntNanoq } from './modules/artic/artic' addParams(
+    min_length: params.min_length,
+    max_length: params.max_length,
+    min_quality: params.min_quality
+)
+
+include { OntMinimapAlignSortedBam } from './modules/ont/ont' addParams(
+    stage: "alignment",
+    subdir: ""
+)
+include { OntPrimerTrim }  from './modules/ont/ont' addParams(
+    stage: "alignment",
+    subdir: ""
+)
+include { OntIvar as OntIvar90 }  from './modules/ont/ont' addParams(
+    stage: "consensus",
+    subdir: "90",
+    ivar_min_freq: 0.9
+)
+include { OntIvar as OntIvar75 } from './modules/ont/ont' addParams(
+    stage: "consensus",
+    subdir: "75",
+    ivar_min_freq: 0.75
+)
+include { OntIvar as OntIvar60 } from './modules/ont/ont' addParams(
+    stage: "consensus",
+    subdir: "60",
+    ivar_min_freq: 0.60
+)
+include { OntIvar as OntIvar3 } from './modules/ont/ont' addParams(
+    stage: "consensus",
+    subdir: "3",
+    ivar_min_freq: 0.03
+)
+include { OntIvar as OntIvar0 } from './modules/ont/ont' addParams(
+    stage: "consensus",
+    subdir: "0",
+    ivar_min_freq: 0
+)
+include { OntCoverage } from './modules/ont/ont' addParams(
+    stage: "coverage",
+    subdir: ""
+)
+
+workflow mpxv_ont {
+
+    started = String.format('%tF %<tH:%<tM', java.time.LocalDateTime.now())
+
+    println("""
+    ====================
+    Pipeline parameters
+    ====================
+
+    outdir:                   $params.outdir
+    version                   $params.version
+    
+    deplete_host:             $params.deplete_host
+    host_index:               $params.host_index
+
+    ====================
+    IVAR amplicon [ONT]
+    ====================
+
+    sample_sheet:             $params.sample_sheet
+    scheme_dir:               $params.scheme_dir
+
+    base_dir:                 $params.base_dir
+    fastq_dir:                $params.fastq_dir
+    fastq_ext:                $params.fastq_ext
+
+    min_length:               $params.min_length
+    max_length:               $params.max_length
+    min_quality:              $params.min_quality
+
+    reference:                $params.reference
+    ivar_ref_gff:             $params.ivar_ref_gff
+    ivar_min_qual:            $params.ivar_min_qual
+    ivar_min_depth:           $params.ivar_min_depth
+    ivar_fill_char:           $params.ivar_fill_char
+    ivar_mpileup_args:        $params.ivar_mpileup_args
+    ivar_mpileup_max_depth:   $params.ivar_mpileup_max_depth
+
+    
+    """)
+
+    if (!params.scheme_dir){
+        println("Please provide a primer scheme directory (--scheme_dir)")
+        System.exit(1)
+    }
+
+    (primer_scheme, primer_bed) = validate_primer_scheme(params.scheme_dir)
+
+    println("Primer scheme directory: ${primer_scheme[0]} (scheme: ${primer_scheme[1]})")
+    
+    reference = check_file(params.reference)
+    gff = check_file(params.ivar_ref_gff)
+
+    fastq_files = get_fastq_files_ont(
+        null, 
+        null, 
+        params.fastq_dir, 
+        params.fastq_ext, 
+        null, 
+        params.sample_sheet,
+        params.base_dir
+    )
+
+    qc_files = OntNanoq(fastq_files)
+
+    if (params.deplete_host) {
+        host_index = check_file(params.host_index)
+        host_aligned_reads = Minimap2HostSingle(
+            qc_files[0], host_index
+        )
+        depleted = DepleteHostSingle(
+            host_aligned_reads[0], host_aligned_reads[1]
+        )
+        reads = depleted[0]
+    } else {
+        reads = qc_files[0]
+    }
+
+
+    aligned_reads = OntMinimapAlignSortedBam(reads, reference)
+    trimmed_reads = OntPrimerTrim(aligned_reads)
+    coverage = OntCoverage(trimmed_reads)
+
+    MpxvIvar90(trimmed_reads, reference, gff)
+    MpxvIvar75(trimmed_reads, reference, gff)
+    MpxvIvar60(trimmed_reads, reference, gff)
+    MpxvIvar3(trimmed_reads, reference, gff)
+    MpxvIvar0(trimmed_reads, reference, gff)
+
+}
+
+
 
 /*
 =======================
