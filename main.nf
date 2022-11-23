@@ -319,7 +319,7 @@ workflow mpxv_ont {
 
 
     aligned_reads = OntMinimapAlignSortedBam(reads, reference)
-    trimmed_reads = OntPrimerTrim(aligned_reads)
+    trimmed_reads = OntPrimerTrim(aligned_reads, primer_bed)
     coverage = OntCoverage(trimmed_reads)
 
     MpxvIvar90(trimmed_reads, reference, gff)
