@@ -86,7 +86,7 @@ def get_fastp_data(file: Path or None) -> Tuple[int, int]:
     return all_reads, qc_reads  # Illumina PE
 
 
-def get_host_reads(file: Path or None, ont: bool) -> int:
+def get_host_reads(file: Path or None, ont: bool, ont_ivar: bool) -> int:
     """
     Get mgp-tools deplete data
     """
@@ -97,7 +97,7 @@ def get_host_reads(file: Path or None, ont: bool) -> int:
         mgpt_data = json.load(infile)
 
     reads = mgpt_data["reads"][0]["depleted"]
-    if not ont:
+    if not ont or not ont_ivar:
         reverse_depleted = mgpt_data["reads"][1]["depleted"]
         reads = reads+reverse_depleted
 
@@ -218,7 +218,7 @@ def quality_control_consensus(
 
         aligned_reads, coverage, mean_depth = get_samtools_data(sample_files.samtools)
         completeness, missing = get_consensus_assembly_data(sample_files.assembly)
-        host_reads = get_host_reads(sample_files.depletion, ont=ont)
+        host_reads = get_host_reads(sample_files.depletion, ont=ont, ont_ivar=ont_ivar)
 
         qc = SampleQC(
             name=sample,
