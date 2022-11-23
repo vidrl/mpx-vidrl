@@ -97,7 +97,7 @@ def get_host_reads(file: Path or None, ont: bool, ont_ivar: bool) -> int:
         mgpt_data = json.load(infile)
 
     reads = mgpt_data["reads"][0]["depleted"]
-    if not ont or not ont_ivar:
+    if not ont and not ont_ivar:
         reverse_depleted = mgpt_data["reads"][1]["depleted"]
         reads = reads+reverse_depleted
 
