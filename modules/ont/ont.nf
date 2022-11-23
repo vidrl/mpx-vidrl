@@ -39,10 +39,6 @@ process OntPrimerTrim {
     output:
     tuple val(id), val(idx_name), file("${id}_${idx_name}.trimmed.bam")
 
-    script:
-
-    idx_name = index.baseName
-
     """
     ivar trim -b $primer_bed -p ${id}_${idx_name}.trimmed -i $bam -q 10 -m 100 -s 4
     """
