@@ -22,11 +22,14 @@ def quality_control(
     ont: bool = typer.Option(
         False, help="Output directory is from ARTIC"
     ),
+    ont_ivar: bool = typer.Option(
+        False, help="Output directory is from ONT IVAR workflow"
+    ),
 ):
     """
     Quality control data
     """
-    quality_control_consensus(results=results, subdir=subdir, table_output=output, ont=ont)
+    quality_control_consensus(results=results, subdir=subdir, table_output=output, ont=ont, ont_ivar=ont_ivar)
 
 
 @report.command()
