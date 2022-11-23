@@ -30,17 +30,18 @@ process OntPrimerTrim {
     label "ivar"
 
 
-    publishDir "$params.outdir/$params.stage/$params.subdir", mode: "symlink", pattern: "${id}_${idx_name}.trimmed.bam"
+    publishDir "$params.outdir/$params.stage/$params.subdir", mode: "symlink", pattern: "${id}_${idx_name}.trimmed.sorted.bam"
 
     input:
     tuple val(id), val(idx_name), file(bam)
     file(primer_bed)
 
     output:
-    tuple val(id), val(idx_name), file("${id}_${idx_name}.trimmed.bam")
+    tuple val(id), val(idx_name), file("${id}_${idx_name}.trimmed.sorted.bam")
 
     """
     ivar trim -b $primer_bed -p ${id}_${idx_name}.trimmed -i $bam -q 10 -m 100 -s 4
+    samtools sort ${id}_${idx_name}.trimmed -o ${id}_${idx_name}.trimmed.sorted.bam
     """
 
 }
