@@ -18,7 +18,7 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 from Bio import GenBank
 from Bio import SeqIO
-
+from cyvcf2 import VCF
 
 @dataclass
 class SampleFiles:
@@ -250,20 +250,10 @@ def quality_control_consensus(
     return df, table
 
 
-def variant_table(
-    results: Path,
-    subdir: str,
-    min_complete: float = 95.0,
-    min_depth: float = 50,
-    genbank_file: Path = None,
-    mask_file: Path = None,
-    freq_alpha: float = 0.3,
-    variant_pass: bool = True,
-    low_freq_depth: str = None
-):
-
-    consensus_directory = results / "consensus" / subdir
-
+def read_ivar_variants(consensus_directory: Path) -> pandas.DataFrame:
+    """
+    Read iVar variant outputs
+    """
     variant_dfs = []
     for file in consensus_directory.glob("*.variants.tsv"):
         df = pandas.read_csv(file, sep="\t", header=0)
@@ -274,32 +264,103 @@ def variant_table(
         df['SAMPLE'] = [sample_name for _ in df.iterrows()]
         variant_dfs.append(df)
 
-    variant_df = pandas.concat(variant_dfs)
-    qc_df, _ = quality_control_consensus(results=results, subdir=subdir)
+    return pandas.concat(variant_dfs)
 
-    qc_df_pass = qc_df[(qc_df["Completeness"] >= min_complete) & (qc_df["Mean Depth"] >= min_depth)]
 
-    variant_df_pass = variant_df[variant_df["SAMPLE"].isin(qc_df_pass["Sample"])].reset_index(drop=True)
+def read_medaka_variants(consensus_directory: Path) -> pandas.DataFrame:
+    """
+    Read Medaka variant outputs
+    """
+    variant_dfs = []
+    for file in consensus_directory.glob("*.pass.vcf.gz"):
+        sample_name = file.name.replace(".pass.vcf.gz", "")
+        variants = pandas.DataFrame([
+            [
+                variant.CHROM,
+                variant.POS,
+                variant.REF,
+                variant.ALT[0],
+                variant.QUAL,
+                variant.FILTER
+            ] for variant in VCF(str(file))
+        ], columns=[
+            'CHROM',
+            'POS',
+            'REF',
+            'ALT',
+            'QUAL',
+            'FILTER'
+        ])
+        if variants.empty:
+            variants.loc[0] = [None for _ in variants.columns]
+
+        variants['SAMPLE'] = [sample_name for _ in variants.iterrows()]
+
+        variant_dfs.append(variants)
+    return pandas.concat(variant_dfs)
+
+
+def variant_table(
+    results: Path,
+    subdir: str = None,
+    outdir: Path = Path.cwd(),
+    ont_artic: bool = False,
+    qc_pass: bool = False,
+    min_complete: float = 95.0,
+    min_depth: float = 50,
+    genbank_file: Path = None,
+    mask_file: Path = None,
+    freq_alpha: float = 0.3,
+    variant_pass: bool = True,
+    low_freq_depth: str = None
+):
+
+    if not ont_artic:
+        if subdir is None:
+            print("Subdir must be specified.")
+            exit(1)
+
+        variant_df = read_ivar_variants(consensus_directory=results / "consensus" / subdir)
+    else:
+        variant_df = read_medaka_variants(consensus_directory=results / "consensus")
+
+    if qc_pass:
+        qc_df, _ = quality_control_consensus(results=results, subdir=subdir)
+        qc_df_pass = qc_df[(qc_df["Completeness"] >= min_complete) & (qc_df["Mean Depth"] >= min_depth)]
+        variant_df_pass = variant_df[variant_df["SAMPLE"].isin(qc_df_pass["Sample"])].reset_index(drop=True)
+    else:
+        variant_df_pass = variant_df.copy()
 
     # Decorate the passing sample variant table with additional information from the Genbank file
 
     if genbank_file is not None and mask_file is not None:
-        variant_df_pass = decorate_variants(
-            variant_table=variant_df_pass, genbank_file=genbank_file, mask_file=mask_file, freq_alpha=freq_alpha,
-            variant_pass=variant_pass, subdir=subdir, low_freq_depth=low_freq_depth
+        decorate_variants(
+            variant_table=variant_df_pass,
+            genbank_file=genbank_file,
+            mask_file=mask_file,
+            ont_artic=ont_artic,
+            freq_alpha=freq_alpha,
+            variant_pass=variant_pass,
+            subdir=subdir,
+            outdir=outdir,
+            low_freq_depth=low_freq_depth
         )
+    else:
+        print("Non Genbank file (and/or maskign file) specified, skippign variant annotation")
 
 
 def decorate_variants(
     variant_table: pandas.DataFrame,
     genbank_file: Path,
     mask_file: Path,
+    subdir: str = "high_freq",
+    ont_artic: bool = False,
     context_size: int = 5,
     debug: bool = False,
     freq_alpha: float = 0.3,
     variant_pass: bool = True,
-    subdir: str = "high_freq",
-    low_freq_depth: str = None
+    low_freq_depth: str = None,
+    outdir: Path = Path.cwd()
 ):
 
     """
@@ -315,8 +376,15 @@ def decorate_variants(
 
     """
 
+    if not outdir.exists():
+        outdir.mkdir(parents=True, exist_ok=True)
+
     with open(genbank_file) as handle:
         record = GenBank.read(handle)
+
+    # TODO: This is super important otherwise indices off,
+    # TODO: need to recheck with TWIST data!
+    variant_table = variant_table.reset_index()
 
     apobec3_data = []
     ns_data = []
@@ -352,10 +420,13 @@ def decorate_variants(
                 f" - CONTEXT: {var_context} - APOBEC3: {apobec3}"
             )
 
-        if row["ALT_AA"] is np.nan:
-            ns_data.append([False])
-        else:
-            ns_data.append([row["REF_AA"] != row["ALT_AA"]])
+        try:
+            if row["ALT_AA"] is np.nan:
+                ns_data.append([False])
+            else:
+                ns_data.append([row["REF_AA"] != row["ALT_AA"]])
+        except KeyError:
+            ns_data.append([None])
 
         apobec3_data.append([apobec3, pattern, var_context])
 
@@ -368,30 +439,33 @@ def decorate_variants(
         ns_data, columns=["NS"]
     )
 
+    print(apobec_df)
+
     variants_apobec = variant_table.join(apobec_df)
     variants_ns = variants_apobec.join(ns_df)
 
     variants_masked, mask_df = annotate_masked_regions(variants_ns, mask_file)
     variants_cds = annotate_cds(variants_masked, genbank_file)
 
-    # Filter
+    # Following require iVar output:
 
-    if variant_pass:
-        variants_cds = variants_cds[variants_cds["PASS"] == True]
+    if not ont_artic:
+        if variant_pass:
+            variants_cds = variants_cds[variants_cds["PASS"] == True]
 
-    if low_freq_depth:
-        settings = [setting.split(":") for setting in low_freq_depth.split("-")]
-        for (freq, min_depth) in sorted(settings, key=lambda x: x[0]):
-            # Sort by frequency thresholds, then apply the minimum depth criterion
-            # this will drop variants successively e.g. first those <= 1% and < 1000x
-            # then <= 5% and 300x, then <= 10% and 100x (Nature Medicine microevolution)
-            var_cds = variants_cds.copy()
-            for idx, variant in var_cds.iterrows():
-                if variant["ALT_FREQ"] <= float(freq) and variant["ALT_DP"] < int(min_depth):
-                    if debug:
-                        print(f"FAIL variant : {variant['ALT_FREQ']} with {variant['ALT_DP']}")
-                    variants_cds.drop(idx, inplace=True)
-            variants_cds.reset_index(drop=True, inplace=True)
+        if low_freq_depth:
+            settings = [setting.split(":") for setting in low_freq_depth.split("-")]
+            for (freq, min_depth) in sorted(settings, key=lambda x: x[0]):
+                # Sort by frequency thresholds, then apply the minimum depth criterion
+                # this will drop variants successively e.g. first those <= 1% and < 1000x
+                # then <= 5% and 300x, then <= 10% and 100x (Nature Medicine microevolution)
+                var_cds = variants_cds.copy()
+                for idx, variant in var_cds.iterrows():
+                    if variant["ALT_FREQ"] <= float(freq) and variant["ALT_DP"] < int(min_depth):
+                        if debug:
+                            print(f"FAIL variant : {variant['ALT_FREQ']} with {variant['ALT_DP']}")
+                        variants_cds.drop(idx, inplace=True)
+                variants_cds.reset_index(drop=True, inplace=True)
 
     if debug:
         print("APOBEC3")
@@ -410,47 +484,54 @@ def decorate_variants(
 
     mask_cds_df = get_mask_cds(genbank_file=genbank_file, mask_df=mask_df)
 
-    variant_summary = get_variant_pop_summary(variants=variants_cds)
-
     mask_name = mask_file.name.split(".")[-2]
     gbk_name = genbank_file.name.split(".")[-2]
 
-    plot_variant_distribution(
-        df=variants_cds,
-        ref_length=len(record.sequence),
-        output_file=Path(f"variant_distr_{subdir}_{mask_name}_{gbk_name}.png"),
-        mask_df=mask_df,
-        freq_alpha=freq_alpha
-    )
+    if subdir is not None:
+        _subdir = f"_{subdir}_"
+    else:
+        _subdir = f"_"
 
-    plot_apobec_frequencies(
-        df=variants_cds,
-        output_file=Path(f"apobec_sample_{subdir}_{gbk_name}.png")
-    )
-    plot_non_synonymous(
-        df=variants_cds,
-        output_file=Path(f"ns_sample_{subdir}_{gbk_name}.png")
-    )
+    if not ont_artic:
+        plot_variant_distribution(
+            df=variants_cds,
+            ref_length=len(record.sequence),
+            output_file=outdir / f"variant_distr{_subdir}{mask_name}_{gbk_name}.png",
+            mask_df=mask_df,
+            freq_alpha=freq_alpha
+        )
 
-    variant_summary.to_csv(f"variants_summary_{subdir}_{mask_name}_{gbk_name}.tsv", sep="\t", index=False)
-    variants_cds.to_csv(f"variants_{subdir}_{mask_name}_{gbk_name}.tsv", sep="\t", index=False)
-    mask_cds_df.to_csv(f"mask_cds_{subdir}_{mask_name}_{gbk_name}.tsv", sep="\t", index=False)
+        plot_apobec_frequencies(
+            df=variants_cds,
+            output_file=outdir / f"apobec_sample{_subdir}{gbk_name}.png"
+        )
+        plot_non_synonymous(
+            df=variants_cds,
+            output_file=outdir / f"ns_sample{_subdir}{gbk_name}.png"
+        )
+
+    variant_summary = get_variant_pop_summary(variants=variants_cds, ont_artic=ont_artic)
+    variant_summary.to_csv(outdir / f"variants_summary{_subdir}{mask_name}_{gbk_name}.tsv", sep="\t", index=False)
+
+    variants_cds.to_csv(outdir / f"variants{_subdir}{mask_name}_{gbk_name}.tsv", sep="\t", index=False)
+    mask_cds_df.to_csv(outdir / f"mask_cds{_subdir}{mask_name}_{gbk_name}.tsv", sep="\t", index=False)
 
     return variants_cds
 
 
-def get_variant_pop_summary(variants: pandas.DataFrame):
+def get_variant_pop_summary(variants: pandas.DataFrame, ont_artic: bool):
 
     samples = len(variants["SAMPLE"].unique())
     var_data = []
     for _, data in variants.groupby(["POS", "REF", "ALT"]):
         rep = data.iloc[0]
-        rep = rep.drop(
-            labels=[
-                "REF_DP", "REF_RV", "REF_QUAL", "ALT_DP", "ALT_RV", "ALT_QUAL", "ALT_FREQ",
-                "TOTAL_DP", "PASS", "PVAL", "SAMPLE"
-            ]
-        )
+        if not ont_artic:
+            rep = rep.drop(
+                labels=[
+                    "REF_DP", "REF_RV", "REF_QUAL", "ALT_DP", "ALT_RV", "ALT_QUAL", "ALT_FREQ",
+                    "TOTAL_DP", "PASS", "PVAL", "SAMPLE"
+                ]
+            )
         rep["POP_COUNT"] = len(data)
         rep["POP_FREQ"] = len(data)/samples
         var_data.append(rep)
@@ -557,11 +638,10 @@ def annotate_cds(variants: pandas.DataFrame, genbank_file: Path):
         cds_data, columns=["INTERGENIC", "GBK_GENE", "GBK_LOCUS_TAG", "GBK_PROTEIN_ID", "GBK_PRODUCT", "GBK_NOTE"]
     )
 
-    print(cds_df.index.to_list())
+    print(variants)
+    print(cds_df)
 
     variants_cds = variants.join(cds_df)
-
-    print(variants_cds[variants_cds["POS"] == 22469])
 
     return variants_cds
 

@@ -15,7 +15,8 @@ setup(
         "numpy",
         "seaborn",
         "matplotlib",
-        "biopython"
+        "biopython",
+        "cyvcf2"
     ],
     entry_points="""
     [console_scripts]

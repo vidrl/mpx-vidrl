@@ -40,7 +40,7 @@ process OntPrimerTrim {
     tuple val(id), val(idx_name), file("${id}_${idx_name}.trimmed.sorted.bam")
 
     """
-    ivar trim -b $primer_bed -p ${id}_${idx_name}.trimmed -i $bam -q 10 -m 100 -s 4
+    ivar trim -b $primer_bed -p ${id}_${idx_name}.trimmed -i $bam -q 10 -m 50 -s 4
     samtools sort ${id}_${idx_name}.trimmed.bam -o ${id}_${idx_name}.trimmed.sorted.bam
     """
 
